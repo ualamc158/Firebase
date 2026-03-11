@@ -1,22 +1,21 @@
 {
   "project_info": {
-    "project_number": "660829391591",
-    "firebase_url": "https://fir-4408f-default-rtdb.europe-west1.firebasedatabase.app",
-    "project_id": "fir-4408f",
-    "storage_bucket": "fir-4408f.firebasestorage.app"
+    "project_number": "127136605424",
+    "project_id": "fir-2a9f0",
+    "storage_bucket": "fir-2a9f0.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:660829391591:android:8b95186ede34e6378bf042",
+        "mobilesdk_app_id": "1:127136605424:android:d2fa187a05761c7e274e35",
         "android_client_info": {
-          "package_name": "com.example.firebase"
+          "package_name": "com.alberto.firebase"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyA0OEw0l8O_ZV_BOxCEBLTAv-R05ldRJFY"
+          "current_key": "AIzaSyBWjBAQfylIppz3zc6POclAoklwMiufGmA"
         }
       ],
       "services": {

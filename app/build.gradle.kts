@@ -7,13 +7,13 @@ plugins {
 }
 
 android {
-    namespace = "com.example.firebase"
+    namespace = "com.alberto.firebase"
     compileSdk {
         version = release(36)
     }
 
     defaultConfig {
-        applicationId = "com.example.firebase"
+        applicationId = "com.alberto.firebase"
         minSdk = 24
         targetSdk = 36
         versionCode = 1

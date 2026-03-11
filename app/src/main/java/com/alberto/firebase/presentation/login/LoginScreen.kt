@@ -1,4 +1,4 @@
-package com.example.firebase.presentation.signup
+package com.alberto.firebase.presentation.login
 
 import android.util.Log
 import androidx.compose.foundation.background
@@ -27,17 +27,16 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.firebase.R
-import com.example.firebase.ui.theme.Black
-import com.example.firebase.ui.theme.SelectedField
-import com.example.firebase.ui.theme.UnselectedField
+import com.alberto.firebase.R
+import com.alberto.firebase.ui.theme.Black
+import com.alberto.firebase.ui.theme.SelectedField
+import com.alberto.firebase.ui.theme.UnselectedField
 import com.google.firebase.auth.FirebaseAuth
 
 @Composable
-fun SignupScreen(auth: FirebaseAuth) {
+fun LoginScreen(auth: FirebaseAuth, navigateToHome: () -> Unit) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -45,7 +44,6 @@ fun SignupScreen(auth: FirebaseAuth) {
             .padding(horizontal = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-
         Row(){
             Icon(
                 painter = painterResource(id = R.drawable.ic_back_24),
@@ -57,8 +55,8 @@ fun SignupScreen(auth: FirebaseAuth) {
             )
             Spacer(modifier = Modifier.weight(1f))
         }
-
-        Text("Email", color = White, fontWeight = FontWeight.Bold, fontSize = 40.sp)
+        Text("Email", color = White, fontWeight = FontWeight.Bold, fontSize =
+            40.sp)
         TextField(
             value = email,
             onValueChange = { email = it },
@@ -80,16 +78,17 @@ fun SignupScreen(auth: FirebaseAuth) {
         )
         Spacer(Modifier.height(48.dp))
         Button(onClick = {
-            auth.createUserWithEmailAndPassword(email, password).addOnCompleteListener{ task ->
+            auth.signInWithEmailAndPassword(email, password).addOnCompleteListener{ task ->
                 if(task.isSuccessful){
-                    Log.i("Ignacio", "Registro OK")
+                    navigateToHome()
+                    Log.i("Alberto", "LOGIN OK")
                 }else{
                     //Error
-                    Log.i("Ignacio", "Registro KO")
+                    Log.i("Alberto", "LOGIN KO")
                 }
             }
         }) {
-            Text(text = "Sign Up")
+            Text(text = "Login")
         }
     }
 }

@@ -1,4 +1,4 @@
-package com.example.firebase.presentation.initial
+package com.alberto.firebase.presentation.initial
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -30,11 +30,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.firebase.R
-import com.example.firebase.ui.theme.BackgroundButton
-import com.example.firebase.ui.theme.Black
-import com.example.firebase.ui.theme.Gray
-import com.example.firebase.ui.theme.ShapeButton
+import com.alberto.firebase.R
+import com.alberto.firebase.ui.theme.BackgroundButton
+import com.alberto.firebase.ui.theme.Black
+import com.alberto.firebase.ui.theme.Gray
+import com.alberto.firebase.ui.theme.ShapeButton
 @Preview
 @Composable
 fun InitialScreen(navigateToLogin: ()->Unit={},navigateToSignUp:()->Unit={}) {
@@ -86,8 +86,8 @@ fun InitialScreen(navigateToLogin: ()->Unit={},navigateToSignUp:()->Unit={}) {
 }
 
 @Composable
-fun CustomButton(modificer: Modifier, painter: Painter, title: String){
-    Box(modifier = modificer, contentAlignment = Alignment.CenterStart){
+fun CustomButton(modifier: Modifier, painter: Painter, title: String){
+    Box(modifier = modifier, contentAlignment = Alignment.CenterStart){
         Image(painter = painter,
             contentDescription = "",
             modifier = Modifier.padding(start=16.dp).size(16.dp))

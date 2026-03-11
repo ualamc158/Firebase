@@ -1,4 +1,4 @@
-package com.example.firebase.data.model
+package com.alberto.firebase.data.model
 
 data class Artist(
     val name:String? = null,

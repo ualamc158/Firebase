@@ -1,4 +1,4 @@
-package com.example.firebase
+package com.alberto.firebase
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -10,13 +10,11 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
-import com.example.firebase.presentation.homescreen.HomeViewmodel
-import com.example.firebase.ui.theme.FirebaseTheme
+import com.alberto.firebase.presentation.homescreen.HomeViewmodel
+import com.alberto.firebase.ui.theme.FirebaseTheme
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.ktx.auth
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 
 class MainActivity : ComponentActivity() {

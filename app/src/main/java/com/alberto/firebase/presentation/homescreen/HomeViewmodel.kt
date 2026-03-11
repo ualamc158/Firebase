@@ -1,10 +1,10 @@
-package com.example.firebase.presentation.homescreen
+package com.alberto.firebase.presentation.homescreen
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.firebase.data.model.Artist
-import com.example.firebase.data.model.Player
+import com.alberto.firebase.data.model.Artist
+import com.alberto.firebase.data.model.Player
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
@@ -19,20 +19,15 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.compose
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 
 class HomeViewmodel : ViewModel() {
     private var db: FirebaseFirestore = Firebase.firestore
-
     private var database: FirebaseDatabase = Firebase.database
-
-
     private val _artist = MutableStateFlow<List<Artist>>(emptyList())
     val artist: StateFlow<List<Artist>> = _artist
-
     private val _player = MutableStateFlow<Player?>(null)
     val player: StateFlow<Player?> = _player
 
@@ -44,12 +39,12 @@ class HomeViewmodel : ViewModel() {
 //        }
         getPlayer()
     }
-//    private fun loadData(){
-//        val random = (1..10000).random()
-//        val artist = Artist("Random $random", description = "Descripción random núemro $random", image = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTwyXeKDN29AmZgZPLS7n0Bepe8QmVappBwZCeA3XWEbWNdiDFB")
-//
-//        db.collection("artists").add(artist)
-//    }
+    private fun loadData(){
+        val random = (1..10000).random()
+        val artist = Artist("Random $random", description = "Descripción random núemro $random", image = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTwyXeKDN29AmZgZPLS7n0Bepe8QmVappBwZCeA3XWEbWNdiDFB")
+
+        db.collection("artists").add(artist)
+    }
 
     private fun collectPlayer(): Flow<DataSnapshot> = callbackFlow {
         val listener = object: ValueEventListener {
@@ -58,7 +53,7 @@ class HomeViewmodel : ViewModel() {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                Log.i("Ignacio","Error: ${error.message}")
+                Log.i("Alberto","Error: ${error.message}")
                 close(error.toException())
             }
         }

@@ -1,4 +1,4 @@
-package com.example.firebase.presentation.login
+package com.alberto.firebase.presentation.signup
 
 import android.util.Log
 import androidx.compose.foundation.background
@@ -25,19 +25,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.firebase.R
-import com.example.firebase.ui.theme.Black
-import com.example.firebase.ui.theme.SelectedField
-import com.example.firebase.ui.theme.UnselectedField
+import com.alberto.firebase.R
+import com.alberto.firebase.ui.theme.Black
+import com.alberto.firebase.ui.theme.SelectedField
+import com.alberto.firebase.ui.theme.UnselectedField
 import com.google.firebase.auth.FirebaseAuth
 
 @Composable
-fun LoginScreen(auth: FirebaseAuth, navigateToHome: () -> Unit) {
+fun SignupScreen(auth: FirebaseAuth) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -45,6 +45,7 @@ fun LoginScreen(auth: FirebaseAuth, navigateToHome: () -> Unit) {
             .padding(horizontal = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+
         Row(){
             Icon(
                 painter = painterResource(id = R.drawable.ic_back_24),
@@ -56,8 +57,8 @@ fun LoginScreen(auth: FirebaseAuth, navigateToHome: () -> Unit) {
             )
             Spacer(modifier = Modifier.weight(1f))
         }
-        Text("Email", color = White, fontWeight = FontWeight.Bold, fontSize =
-            40.sp)
+
+        Text("Email", color = White, fontWeight = FontWeight.Bold, fontSize = 40.sp)
         TextField(
             value = email,
             onValueChange = { email = it },
@@ -79,17 +80,16 @@ fun LoginScreen(auth: FirebaseAuth, navigateToHome: () -> Unit) {
         )
         Spacer(Modifier.height(48.dp))
         Button(onClick = {
-            auth.signInWithEmailAndPassword(email, password).addOnCompleteListener{ task ->
+            auth.createUserWithEmailAndPassword(email, password).addOnCompleteListener{ task ->
                 if(task.isSuccessful){
-                    navigateToHome()
-                    Log.i("Ignacio", "LOGIN OK")
+                    Log.i("Alberto", "Registro OK")
                 }else{
                     //Error
-                    Log.i("Ignacio", "LOGIN KO")
+                    Log.i("Alberto", "Registro KO")
                 }
             }
         }) {
-            Text(text = "Login")
+            Text(text = "Sign Up")
         }
     }
 }
