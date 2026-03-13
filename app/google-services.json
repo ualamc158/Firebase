@@ -1,6 +1,7 @@
 {
   "project_info": {
     "project_number": "127136605424",
+    "firebase_url": "https://fir-2a9f0-default-rtdb.europe-west1.firebasedatabase.app",
     "project_id": "fir-2a9f0",
     "storage_bucket": "fir-2a9f0.firebasestorage.app"
   },
@@ -12,7 +13,20 @@
           "package_name": "com.alberto.firebase"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "127136605424-fntuj8edfb2gvemb0fg243jd1v602mnq.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.alberto.firebase",
+            "certificate_hash": "9f87f082eb73d57a66560a52cf3cbf04e6a2246d"
+          }
+        },
+        {
+          "client_id": "127136605424-3n8tu8u6d4khkbhh2pggtjo0hakgi9ec.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBWjBAQfylIppz3zc6POclAoklwMiufGmA"
@@ -20,7 +34,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "127136605424-3n8tu8u6d4khkbhh2pggtjo0hakgi9ec.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

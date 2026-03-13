@@ -18,7 +18,6 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 
 class MainActivity : ComponentActivity() {
-
     private lateinit var navHostController: NavHostController
     private lateinit var auth: FirebaseAuth
 

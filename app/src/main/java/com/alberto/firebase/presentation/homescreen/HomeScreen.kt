@@ -54,11 +54,16 @@ fun HomeScreen(viewmodel: HomeViewmodel = HomeViewmodel()) {
         )
         LazyRow {
             items(artists.value) {
-                ArtistItem(artist = it,{viewmodel.addPlayer(it)})
+                ArtistItem(artist = it, { viewmodel.addPlayer(it) })
             }
         }
         Spacer(modifier = Modifier.weight(1f))
-        player?.let{PlayerComponent(it, {viewmodel.onPlaySelected()}, {viewmodel.onCancelSelected()})}
+        player?.let {
+            PlayerComponent(
+                it,
+                { viewmodel.onPlaySelected() },
+                { viewmodel.onCancelSelected() })
+        }
     }
 }
 
@@ -80,12 +85,14 @@ fun PlayerComponent(player: Player, onPlaySelected: () -> Unit, onCancelSelected
             color = Color.White
         )
         Spacer(modifier = Modifier.weight(1f))
-        Image(painter = painterResource(id = icon),
+        Image(
+            painter = painterResource(id = icon),
             contentDescription = "play/pause",
             modifier = Modifier
                 .size(40.dp)
                 .clickable { onPlaySelected() })
-        Image(painter = painterResource(id = R.drawable.ic_close),
+        Image(
+            painter = painterResource(id = R.drawable.ic_close),
             contentDescription = "Close",
             modifier = Modifier
                 .size(40.dp)
@@ -94,9 +101,10 @@ fun PlayerComponent(player: Player, onPlaySelected: () -> Unit, onCancelSelected
 }
 
 @Composable
-fun ArtistItem(artist: Artist, onItemSelected:()->Unit) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.clickable{onItemSelected()}) {
+fun ArtistItem(artist: Artist, onItemSelected: () -> Unit) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.clickable { onItemSelected() }) {
         AsyncImage(
             modifier = Modifier
                 .size(60.dp)

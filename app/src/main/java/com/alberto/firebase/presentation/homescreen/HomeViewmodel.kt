@@ -33,10 +33,10 @@ class HomeViewmodel : ViewModel() {
 
 
     init {
-        getArtists()
 //        repeat(20){
 //            loadData()
 //        }
+        getArtists()
         getPlayer()
     }
     private fun loadData(){
