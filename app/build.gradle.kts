@@ -53,6 +53,7 @@ dependencies {
     implementation(libs.firebase.realtime.database)
 
     implementation(libs.coil)
+    implementation(libs.play.services.auth)
 
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.core.ktx)
