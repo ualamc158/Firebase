@@ -54,8 +54,16 @@ fun NavigationWrapper(
             )
         }
 
-        composable("Signup") {
-            SignupScreen(auth)
+        composable("signup") {
+            SignupScreen(
+                auth = auth,
+                onBack = { navHostController.popBackStack() },
+                navigateToHome = {
+                    navHostController.navigate("home") {
+                        popUpTo("initial") { inclusive = true }
+                    }
+                }
+            )
         }
 
         composable("home") {
