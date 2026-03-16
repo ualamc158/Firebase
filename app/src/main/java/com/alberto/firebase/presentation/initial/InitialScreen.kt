@@ -126,20 +126,35 @@ fun InitialScreen(
     {
         Spacer(modifier = Modifier.weight(1f))
         Image(
-            painter = painterResource(R.drawable.spotify),
+            painter = painterResource(R.drawable.soundconnect),
             contentDescription = "",
             modifier = Modifier.clip(CircleShape)
         )
 
         Spacer(modifier = Modifier.weight(1f))
 
-        Text(
-            "Millions of songs.",
-            color = Color.White,
-            fontSize = 38.sp,
-            fontWeight = FontWeight.Bold
-        )
-        Text("Free on Spotify", color = Color.White, fontSize = 38.sp, fontWeight = FontWeight.Bold)
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(horizontal = 24.dp)
+        ) {
+            Text(
+                text = "Millions of songs.",
+                color = Color.White,
+                fontSize = 36.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Free on SoundConnect",
+                color = Color(0xFF4285F4),
+                fontSize = 32.sp,
+                fontWeight = FontWeight.ExtraBold,
+                textAlign = TextAlign.Center
+            )
+        }
 
         Spacer(modifier = Modifier.weight(1f))
 

@@ -20,7 +20,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
-import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Menu
@@ -31,9 +30,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged // 🌟 IMPORT AÑADIDO
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager // 🌟 IMPORT AÑADIDO
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -89,6 +90,8 @@ fun HomeScreen(
     val context = LocalContext.current
 
     var searchText by remember { mutableStateOf("") }
+    val focusManager = LocalFocusManager.current
+    var isSearchFocused by remember { mutableStateOf(false) }
 
     val profilePictureUrl by viewmodel.profilePictureUrl.collectAsState()
     var showImageSourceDialog by remember { mutableStateOf(false) }
@@ -139,6 +142,8 @@ fun HomeScreen(
 
     if (drawerState.isOpen) {
         BackHandler { scope.launch { drawerState.close() } }
+    } else if (isSearchFocused) {
+        BackHandler { focusManager.clearFocus() }
     } else if (searchText.isNotBlank()) {
         BackHandler {
             searchText = ""
@@ -248,11 +253,21 @@ fun HomeScreen(
             topBar = {
                 TopAppBar(
                     title = {
-                        Text(
-                            "SoundConnect",
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Image(
+                                painter = painterResource(id = R.drawable.soundconnect),
+                                contentDescription = "Logo SoundConnect",
+                                modifier = Modifier.size(32.dp)
+                            )
+
+                            Spacer(modifier = Modifier.width(12.dp))
+
+                            Text(
+                                text = "SoundConnect",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     },
                     navigationIcon = {
                         IconButton(onClick = { scope.launch { drawerState.open() } }) {
@@ -298,14 +313,20 @@ fun HomeScreen(
             Column(Modifier
                 .fillMaxSize()
                 .background(Black)
-                .padding(paddingValues)) {
+                .padding(paddingValues)
+                .clickable(
+                    indication = null,
+                    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+                ) { focusManager.clearFocus() }
+            ) {
 
                 OutlinedTextField(
                     value = searchText,
                     onValueChange = { searchText = it; viewmodel.searchMusicFromDeezer(it) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .padding(16.dp)
+                        .onFocusChanged { isSearchFocused = it.isFocused },
                     placeholder = {
                         Text(
                             stringResource(id = R.string.search_hint),
@@ -358,6 +379,7 @@ fun HomeScreen(
                                             val artistName = artist.name.orEmpty()
                                             searchText = artistName
                                             viewmodel.searchMusicFromDeezer(artistName)
+                                            focusManager.clearFocus()
                                         })
                                     }
                                 }
@@ -381,7 +403,10 @@ fun HomeScreen(
                                     track = track,
                                     isFavorite = isFav,
                                     onFavoriteToggle = { viewmodel.toggleFavorite(track) },
-                                    onItemSelected = { viewmodel.addPlayer(track) }
+                                    onItemSelected = {
+                                        viewmodel.addPlayer(track)
+                                        focusManager.clearFocus()
+                                    }
                                 )
                             }
                         } else {
@@ -391,7 +416,10 @@ fun HomeScreen(
                                     track = track,
                                     isFavorite = isFav,
                                     onFavoriteToggle = { viewmodel.toggleFavorite(track) },
-                                    onItemSelected = { viewmodel.addPlayer(track) }
+                                    onItemSelected = {
+                                        viewmodel.addPlayer(track)
+                                        focusManager.clearFocus()
+                                    }
                                 )
                             }
                         }
