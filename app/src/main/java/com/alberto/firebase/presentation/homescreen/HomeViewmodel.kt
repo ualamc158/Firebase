@@ -177,9 +177,7 @@ class HomeViewmodel : ViewModel() {
         mediaPlayer = null
         stopProgressTracking()
 
-        _player.value = Player(artist = selectedArtist, play = true)
-        onRemoveFromMap?.invoke()
-        playAudio(selectedArtist.audioUrl)
+        _player.value = Player(artist = selectedArtist, play = false)
     }
 
     private fun playAudio(url: String?) {

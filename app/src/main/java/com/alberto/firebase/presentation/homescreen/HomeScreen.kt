@@ -3,6 +3,7 @@ package com.alberto.firebase.presentation.homescreen
 import android.Manifest
 import android.app.Activity
 import android.content.Context
+import android.content.pm.PackageManager
 import android.hardware.Sensor
 import android.hardware.SensorManager
 import android.net.Uri
@@ -12,6 +13,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -30,16 +32,18 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.onFocusChanged // 🌟 IMPORT AÑADIDO
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalFocusManager // 🌟 IMPORT AÑADIDO
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
@@ -310,14 +314,15 @@ fun HomeScreen(
                 }
             }
         ) { paddingValues ->
-            Column(Modifier
-                .fillMaxSize()
-                .background(Black)
-                .padding(paddingValues)
-                .clickable(
-                    indication = null,
-                    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
-                ) { focusManager.clearFocus() }
+            Column(
+                Modifier
+                    .fillMaxSize()
+                    .background(Black)
+                    .padding(paddingValues)
+                    .clickable(
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    ) { focusManager.clearFocus() }
             ) {
 
                 OutlinedTextField(
@@ -404,8 +409,24 @@ fun HomeScreen(
                                     isFavorite = isFav,
                                     onFavoriteToggle = { viewmodel.toggleFavorite(track) },
                                     onItemSelected = {
-                                        viewmodel.addPlayer(track)
                                         focusManager.clearFocus()
+                                        viewmodel.addPlayer(track)
+
+                                        val hasPermission = ContextCompat.checkSelfPermission(
+                                            context,
+                                            Manifest.permission.ACCESS_FINE_LOCATION
+                                        ) == PackageManager.PERMISSION_GRANTED
+
+                                        if (hasPermission) {
+                                            viewmodel.startMusicAndEmitLocation(context, radarViewModel)
+                                        } else {
+                                            locationPermissionLauncher.launch(
+                                                arrayOf(
+                                                    Manifest.permission.ACCESS_FINE_LOCATION,
+                                                    Manifest.permission.ACCESS_COARSE_LOCATION
+                                                )
+                                            )
+                                        }
                                     }
                                 )
                             }
@@ -417,8 +438,24 @@ fun HomeScreen(
                                     isFavorite = isFav,
                                     onFavoriteToggle = { viewmodel.toggleFavorite(track) },
                                     onItemSelected = {
-                                        viewmodel.addPlayer(track)
                                         focusManager.clearFocus()
+                                        viewmodel.addPlayer(track)
+
+                                        val hasPermission = ContextCompat.checkSelfPermission(
+                                            context,
+                                            Manifest.permission.ACCESS_FINE_LOCATION
+                                        ) == PackageManager.PERMISSION_GRANTED
+
+                                        if (hasPermission) {
+                                            viewmodel.startMusicAndEmitLocation(context, radarViewModel)
+                                        } else {
+                                            locationPermissionLauncher.launch(
+                                                arrayOf(
+                                                    Manifest.permission.ACCESS_FINE_LOCATION,
+                                                    Manifest.permission.ACCESS_COARSE_LOCATION
+                                                )
+                                            )
+                                        }
                                     }
                                 )
                             }
@@ -485,9 +522,11 @@ fun PlayerComponent(
     onCancelSelected: () -> Unit
 ) {
     val icon = if (player.play == true) R.drawable.ic_pause else R.drawable.ic_play
-    Column(Modifier
-        .fillMaxWidth()
-        .background(Purple40)) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .background(Purple40)
+    ) {
         Slider(
             value = progress, onValueChange = onProgressChange,
             modifier = Modifier
@@ -496,9 +535,11 @@ fun PlayerComponent(
                 .padding(horizontal = 8.dp),
             colors = SliderDefaults.colors(thumbColor = Color.White, activeTrackColor = Color.White)
         )
-        Row(Modifier
-            .height(45.dp)
-            .fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            Modifier
+                .height(45.dp)
+                .fillMaxWidth(), verticalAlignment = Alignment.CenterVertically
+        ) {
             Text(
                 text = player.artist?.description.orEmpty(),
                 modifier = Modifier
@@ -544,7 +585,7 @@ fun ArtistItem(artist: Artist, onItemSelected: () -> Unit) {
             color = Color.White,
             fontSize = 12.sp,
             maxLines = 1,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            textAlign = TextAlign.Center
         )
     }
 }
