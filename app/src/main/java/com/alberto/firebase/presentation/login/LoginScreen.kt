@@ -44,7 +44,7 @@ fun LoginScreen(auth: FirebaseAuth, navigateToHome: () -> Unit) {
             .padding(horizontal = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Row(){
+        Row() {
             Icon(
                 painter = painterResource(id = R.drawable.ic_back_24),
                 contentDescription = "",
@@ -55,8 +55,10 @@ fun LoginScreen(auth: FirebaseAuth, navigateToHome: () -> Unit) {
             )
             Spacer(modifier = Modifier.weight(1f))
         }
-        Text("Email", color = White, fontWeight = FontWeight.Bold, fontSize =
-            40.sp)
+        Text(
+            "Email", color = White, fontWeight = FontWeight.Bold, fontSize =
+                40.sp
+        )
         TextField(
             value = email,
             onValueChange = { email = it },
@@ -78,12 +80,12 @@ fun LoginScreen(auth: FirebaseAuth, navigateToHome: () -> Unit) {
         )
         Spacer(Modifier.height(48.dp))
         Button(onClick = {
-            auth.signInWithEmailAndPassword(email, password).addOnCompleteListener{ task ->
-                if(task.isSuccessful){
+            auth.signInWithEmailAndPassword(email, password).addOnCompleteListener { task ->
+                if (task.isSuccessful) {
                     navigateToHome()
                     Log.i("Alberto", "LOGIN OK")
-                }else{
-                    //Error
+                } else {
+
                     Log.e("FIREBASE_LOGIN", "Error: ${task.exception?.message}")
                 }
             }

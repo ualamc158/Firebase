@@ -28,11 +28,11 @@ fun SoundRadarScreen(
     val usersNearby by radarViewModel.usersNearby.collectAsState()
     val context = LocalContext.current
 
-    // 🌟 PETICIÓN DE PERMISOS DE NOTIFICACIONES Y GPS
+
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
-        // Si nos dan permiso, comprobamos si alguien está cerca
+
         radarViewModel.checkProximity(context)
     }
 
@@ -41,14 +41,14 @@ fun SoundRadarScreen(
             Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.ACCESS_COARSE_LOCATION
         )
-        // Solo pedimos POST_NOTIFICATIONS si el móvil tiene Android 13 o superior
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             permissionsToRequest.add(Manifest.permission.POST_NOTIFICATIONS)
         }
         permissionLauncher.launch(permissionsToRequest.toTypedArray())
     }
 
-    // 🌟 CADA VEZ QUE ALGUIEN PONGA MÚSICA O SE MUEVA, COMPROBAMOS DISTANCIAS
+
     LaunchedEffect(usersNearby) {
         radarViewModel.checkProximity(context)
     }
@@ -66,17 +66,19 @@ fun SoundRadarScreen(
         }
     ) { paddingValues ->
         AndroidView(
-            modifier = Modifier.fillMaxSize().padding(paddingValues),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
             factory = { ctx ->
                 MapView(ctx).apply {
                     setTileSource(TileSourceFactory.MAPNIK)
                     setMultiTouchControls(true)
                     controller.setZoom(5.0)
-                    controller.setCenter(GeoPoint(40.4168, -3.7038)) // Inicio en España
+                    controller.setCenter(GeoPoint(40.4168, -3.7038))
                 }
             },
             update = { mapView ->
-                mapView.overlays.clear() // Limpiamos marcadores viejos
+                mapView.overlays.clear()
 
                 usersNearby.forEach { user ->
                     val marker = Marker(mapView)
@@ -86,7 +88,7 @@ fun SoundRadarScreen(
                     marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
                     mapView.overlays.add(marker)
                 }
-                mapView.invalidate() // Refrescar mapa
+                mapView.invalidate()
             }
         )
     }

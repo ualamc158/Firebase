@@ -52,7 +52,7 @@ class HomeViewmodel : ViewModel() {
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading
 
-    // 🌟 ESTADOS PARA ROOM (Favoritos)
+
     private var favoriteDao: FavoriteDao? = null
     private val _favorites = MutableStateFlow<List<FavoriteSong>>(emptyList())
     val favorites: StateFlow<List<FavoriteSong>> = _favorites
@@ -66,7 +66,7 @@ class HomeViewmodel : ViewModel() {
         loadRecommendations()
     }
 
-    // 🌟 INICIALIZA LA BASE DE DATOS LOCAL
+
     fun initLocalDatabase(context: Context) {
         if (favoriteDao == null) {
             favoriteDao = AppDatabase.getDatabase(context).favoriteDao()
@@ -78,7 +78,7 @@ class HomeViewmodel : ViewModel() {
         }
     }
 
-    // 🌟 AÑADE O QUITA DE FAVORITOS
+
     fun toggleFavorite(track: Artist) {
         viewModelScope.launch(Dispatchers.IO) {
             val title = track.description ?: return@launch
@@ -151,14 +151,23 @@ class HomeViewmodel : ViewModel() {
     }
 
     fun searchMusicFromDeezer(query: String) {
-        if (query.isBlank()) { _searchResults.value = emptyList(); return }
+        if (query.isBlank()) {
+            _searchResults.value = emptyList(); return
+        }
         viewModelScope.launch {
             try {
                 val response = RetrofitClient.apiService.searchTracks(query)
                 _searchResults.value = response.data.map { track ->
-                    Artist(name = track.artist.name, description = track.title, image = track.album.coverMedium, audioUrl = track.preview)
+                    Artist(
+                        name = track.artist.name,
+                        description = track.title,
+                        image = track.album.coverMedium,
+                        audioUrl = track.preview
+                    )
                 }.distinctBy { it.description }
-            } catch (e: Exception) { e.printStackTrace() }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
@@ -180,7 +189,9 @@ class HomeViewmodel : ViewModel() {
         }
 
         mediaPlayer = MediaPlayer().apply {
-            setAudioAttributes(AudioAttributes.Builder().setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build())
+            setAudioAttributes(
+                AudioAttributes.Builder().setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build()
+            )
             setDataSource(url)
             prepareAsync()
             setOnPreparedListener { start(); startProgressTracking() }
@@ -202,7 +213,11 @@ class HomeViewmodel : ViewModel() {
         if (!isPlaying) {
             _player.value = currentPlayer.copy(play = true)
             playAudio(audioUrl)
-            radarViewModel.emitCurrentLocation(context, currentArtist.description ?: "Desconocida", currentArtist.name ?: "Artista")
+            radarViewModel.emitCurrentLocation(
+                context,
+                currentArtist.description ?: "Desconocida",
+                currentArtist.name ?: "Artista"
+            )
         } else {
             _player.value = currentPlayer.copy(play = false)
             mediaPlayer?.pause()
@@ -234,7 +249,9 @@ class HomeViewmodel : ViewModel() {
         }
     }
 
-    private fun stopProgressTracking() { progressJob?.cancel() }
+    private fun stopProgressTracking() {
+        progressJob?.cancel()
+    }
 
     fun seekAudio(fraction: Float) {
         mediaPlayer?.let {
@@ -303,7 +320,8 @@ class HomeViewmodel : ViewModel() {
                 val base64String = Base64.encodeToString(imageBytes, Base64.DEFAULT)
 
                 val database = FirebaseDatabase.getInstance().reference
-                database.child("users").child(user.uid).child("profilePicture").setValue(base64String)
+                database.child("users").child(user.uid).child("profilePicture")
+                    .setValue(base64String)
                     .addOnSuccessListener {
                         Log.d("DB_PROFILE", "¡Foto subida como texto a Realtime Database!")
                     }

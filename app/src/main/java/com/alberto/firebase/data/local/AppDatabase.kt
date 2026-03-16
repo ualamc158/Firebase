@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.room.*
 import kotlinx.coroutines.flow.Flow
 
-// 1. LA TABLA
+
 @Entity(tableName = "favorites")
 data class FavoriteSong(
     @PrimaryKey val title: String,
@@ -13,7 +13,7 @@ data class FavoriteSong(
     val audioUrl: String?
 )
 
-// 2. EL DAO
+
 @Dao
 interface FavoriteDao {
     @Query("SELECT * FROM favorites")
@@ -26,7 +26,7 @@ interface FavoriteDao {
     suspend fun deleteFavorite(song: FavoriteSong)
 }
 
-// 3. LA BASE DE DATOS
+
 @Database(entities = [FavoriteSong::class], version = 1, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun favoriteDao(): FavoriteDao

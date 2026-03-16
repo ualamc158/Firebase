@@ -99,7 +99,7 @@ fun LiveChatScreen(
                 title = { Text("Live Chat 🔴") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        // 🌟 CORREGIDO: Usando AutoMirrored para la flecha de atrás
+
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
                 }
@@ -139,7 +139,11 @@ fun LiveChatScreen(
                 IconButton(onClick = {
                     showImageSourceDialog = true
                 }) {
-                    Icon(Icons.Default.CameraAlt, contentDescription = "Enviar Foto", tint = MaterialTheme.colorScheme.primary)
+                    Icon(
+                        Icons.Default.CameraAlt,
+                        contentDescription = "Enviar Foto",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
                 }
 
                 OutlinedTextField(
@@ -164,8 +168,12 @@ fun LiveChatScreen(
                     modifier = Modifier
                         .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(50))
                 ) {
-                    // 🌟 CORREGIDO: Usando AutoMirrored para el botón de enviar
-                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Enviar", tint = Color.White)
+
+                    Icon(
+                        Icons.AutoMirrored.Filled.Send,
+                        contentDescription = "Enviar",
+                        tint = Color.White
+                    )
                 }
             }
         }
@@ -207,7 +215,8 @@ fun LiveBubble(message: LiveMessage, isMine: Boolean, onDeleteClick: () -> Unit)
                 if (message.textContent.startsWith("IMG:")) {
                     val decodedBitmap = try {
                         val base64String = message.textContent.removePrefix("IMG:")
-                        val imageBytes = android.util.Base64.decode(base64String, android.util.Base64.DEFAULT)
+                        val imageBytes =
+                            android.util.Base64.decode(base64String, android.util.Base64.DEFAULT)
                         BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
                     } catch (e: Exception) {
                         null
@@ -217,7 +226,9 @@ fun LiveBubble(message: LiveMessage, isMine: Boolean, onDeleteClick: () -> Unit)
                         AsyncImage(
                             model = decodedBitmap,
                             contentDescription = "Foto chat",
-                            modifier = Modifier.size(200.dp).clip(RoundedCornerShape(8.dp)),
+                            modifier = Modifier
+                                .size(200.dp)
+                                .clip(RoundedCornerShape(8.dp)),
                             contentScale = ContentScale.Crop
                         )
                     } else {

@@ -47,6 +47,7 @@ class LiveChatViewModel(private val auth: FirebaseAuth) : ViewModel() {
                 }
                 _messages.value = liveList.sortedBy { it.timestamp }
             }
+
             override fun onCancelled(error: DatabaseError) {}
         })
     }
@@ -66,14 +67,14 @@ class LiveChatViewModel(private val auth: FirebaseAuth) : ViewModel() {
         databaseRef.child(messageId).setValue(newMsg)
     }
 
-    // 🌟 ENVÍO DE FOTOS A TRAVÉS DEL CHAT
+
     fun sendImageMessage(context: Context, imageUri: Uri) {
         val user = auth.currentUser ?: return
         val messageId = databaseRef.push().key ?: return
 
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                // Leemos y corregimos orientación si es necesario (igual que en perfil)
+
                 val inputStream = context.contentResolver.openInputStream(imageUri)
                 val originalBitmap = BitmapFactory.decodeStream(inputStream)
                 inputStream?.close()
@@ -100,18 +101,18 @@ class LiveChatViewModel(private val auth: FirebaseAuth) : ViewModel() {
                     exifStream.close()
                 }
 
-                // Escalamos la foto
+
                 val scaledBitmap = Bitmap.createScaledBitmap(rotatedBitmap, 500, 500, true)
                 val outputStream = ByteArrayOutputStream()
                 scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 60, outputStream)
                 val base64String = Base64.encodeToString(outputStream.toByteArray(), Base64.DEFAULT)
 
-                // 🌟 Guardamos el mensaje con el prefijo "IMG:"
+
                 val newMsg = LiveMessage(
                     id = messageId,
                     senderId = user.uid,
                     senderEmail = user.email ?: "SoundConnect User",
-                    textContent = "IMG:$base64String", // Prefijo clave
+                    textContent = "IMG:$base64String",
                     timestamp = System.currentTimeMillis()
                 )
                 databaseRef.child(messageId).setValue(newMsg)

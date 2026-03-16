@@ -33,7 +33,7 @@ fun FavoritesScreen(
     viewModel: HomeViewmodel,
     onBack: () -> Unit
 ) {
-    // 🌟 Leemos la lista de la base de datos local
+
     val favorites by viewModel.favorites.collectAsState()
 
     Scaffold(
@@ -42,7 +42,11 @@ fun FavoritesScreen(
                 title = { Text("Mis Favoritos ❤️", color = Color.White) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = Color.White)
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = "Volver",
+                            tint = Color.White
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Black)
@@ -65,7 +69,7 @@ fun FavoritesScreen(
                         FavoriteItemRow(
                             song = favSong,
                             onPlay = {
-                                // Convertimos la favorita al formato que entiende el reproductor
+
                                 val artist = Artist(
                                     name = favSong.artist,
                                     description = favSong.title,
@@ -75,7 +79,7 @@ fun FavoritesScreen(
                                 viewModel.addPlayer(artist)
                             },
                             onRemove = {
-                                // Usamos la misma función para quitarla
+
                                 val artist = Artist(description = favSong.title)
                                 viewModel.toggleFavorite(artist)
                             }
@@ -101,15 +105,22 @@ fun FavoriteItemRow(song: FavoriteSong, onPlay: () -> Unit, onRemove: () -> Unit
         AsyncImage(
             model = song.imageUrl,
             contentDescription = "Carátula",
-            modifier = Modifier.size(48.dp).clip(RoundedCornerShape(4.dp))
+            modifier = Modifier
+                .size(48.dp)
+                .clip(RoundedCornerShape(4.dp))
         )
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = song.title, color = Color.White, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, maxLines = 1)
+            Text(
+                text = song.title,
+                color = Color.White,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                maxLines = 1
+            )
             Text(text = song.artist, color = Color.Gray, fontSize = 12.sp, maxLines = 1)
         }
 
-        // 🌟 Botón para quitar de favoritos
+
         IconButton(onClick = onRemove) {
             Icon(Icons.Default.Favorite, contentDescription = "Quitar Favorito", tint = Color.Red)
         }

@@ -3,8 +3,6 @@
     <string name="search_hint">What do you want to listen to?</string>
     <string name="popular_artists">Popular Artists</string>
     <string name="top_hits">Global Top Hits</string>
-    <string name="facebook_app_id">979688104729342</string>
-    <string name="facebook_client_token">1bbc4ed56c01f22ec87d702366ab796b</string>
-    <string name="fb_login_protocol_scheme">fb979688104729342</string>
+
 
 </resources>

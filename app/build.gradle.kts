@@ -43,7 +43,7 @@ android {
 }
 
 dependencies {
-    // --- Firebase Stack ---
+
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.crashlytics)
     implementation(libs.firebase.analytics)
@@ -52,14 +52,14 @@ dependencies {
     implementation(libs.firebase.realtime.database)
     implementation(libs.firebase.storage.ktx)
 
-    // --- AndroidX & Navigation ---
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.material.icons.extended)
 
-    // --- UI & Design (Compose & Material3) ---
+
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
@@ -67,23 +67,23 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.material3)
 
-    // --- Networking & Images ---
+
     implementation(libs.retrofit)
     implementation(libs.converter.gson)
     implementation(libs.coil)
     implementation(libs.facebook.login)
 
-    // --- Maps & Location ---
+
     implementation(libs.osmdroid)
     implementation(libs.play.services.location)
     implementation(libs.play.services.auth)
 
-    // --- Unit Testing ---
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 
-    // --- Compose UI Testing ---
+
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)

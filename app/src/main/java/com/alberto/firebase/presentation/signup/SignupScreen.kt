@@ -46,7 +46,7 @@ fun SignupScreen(auth: FirebaseAuth) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
-        Row(){
+        Row() {
             Icon(
                 painter = painterResource(id = R.drawable.ic_back_24),
                 contentDescription = "",
@@ -80,11 +80,11 @@ fun SignupScreen(auth: FirebaseAuth) {
         )
         Spacer(Modifier.height(48.dp))
         Button(onClick = {
-            auth.createUserWithEmailAndPassword(email, password).addOnCompleteListener{ task ->
-                if(task.isSuccessful){
+            auth.createUserWithEmailAndPassword(email, password).addOnCompleteListener { task ->
+                if (task.isSuccessful) {
                     Log.i("Alberto", "Registro OK")
-                }else{
-                    //Error
+                } else {
+
                     Log.i("Alberto", "Registro KO")
                 }
             }

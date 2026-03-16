@@ -14,7 +14,7 @@ import com.alberto.firebase.presentation.livechat.LiveChatScreen
 import com.alberto.firebase.presentation.livechat.LiveChatViewModel
 import com.alberto.firebase.presentation.login.LoginScreen
 import com.alberto.firebase.presentation.signup.SignupScreen
-// 🌟 IMPORTAMOS LA NUEVA PANTALLA
+
 import com.alberto.firebase.presentation.favorites.FavoritesScreen
 import com.google.firebase.auth.FirebaseAuth
 
@@ -73,7 +73,7 @@ fun NavigationWrapper(
                 navigateToRadar = {
                     navHostController.navigate("radar")
                 },
-                // 🌟 AÑADIMOS LA NAVEGACIÓN A FAVORITOS
+
                 navigateToFavorites = {
                     navHostController.navigate("favorites")
                 }
@@ -104,7 +104,7 @@ fun NavigationWrapper(
 
         composable("favorites") {
             FavoritesScreen(
-                viewModel = homeViewModel, // Usamos el mismo ViewModel para compartir la música y datos
+                viewModel = homeViewModel,
                 onBack = { navHostController.popBackStack() }
             )
         }

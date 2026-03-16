@@ -75,7 +75,7 @@ fun HomeScreen(
     navigateToInitial: () -> Unit,
     navigateToChat: () -> Unit,
     navigateToRadar: () -> Unit,
-    navigateToFavorites: () -> Unit // 🌟 AQUÍ ESTÁ EL NUEVO PARÁMETRO DE NAVEGACIÓN
+    navigateToFavorites: () -> Unit
 ) {
     val recommendedArtists by viewmodel.recommendedArtists.collectAsState()
     val recommendedSongs by viewmodel.recommendedSongs.collectAsState()
@@ -158,7 +158,8 @@ fun HomeScreen(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { viewmodel.startMusicAndEmitLocation(context, radarViewModel) }
 
-    val sensorManager = remember { context.getSystemService(Context.SENSOR_SERVICE) as SensorManager }
+    val sensorManager =
+        remember { context.getSystemService(Context.SENSOR_SERVICE) as SensorManager }
     val accelerometer = remember { sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) }
 
     DisposableEffect(Unit) {
@@ -182,7 +183,8 @@ fun HomeScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     AsyncImage(
-                        model = profilePictureUrl ?: "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png",
+                        model = profilePictureUrl
+                            ?: "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png",
                         contentDescription = "Foto de perfil",
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
@@ -208,7 +210,7 @@ fun HomeScreen(
                     colors = NavigationDrawerItemDefaults.colors(unselectedContainerColor = Color.Transparent)
                 )
 
-                // 🌟 NUEVO BOTÓN EN EL MENÚ PARA IR A FAVORITOS
+
                 NavigationDrawerItem(
                     label = { Text("Mis Favoritos ❤️") },
                     selected = false,
@@ -223,7 +225,8 @@ fun HomeScreen(
                     label = { Text("Cerrar sesión") }, selected = false,
                     onClick = {
                         @Suppress("DEPRECATION")
-                        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).build()
+                        val gso =
+                            GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).build()
 
                         @Suppress("DEPRECATION")
                         GoogleSignIn.getClient(context, gso).signOut().addOnCompleteListener {
@@ -244,7 +247,13 @@ fun HomeScreen(
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("SoundConnect", color = Color.White, fontWeight = FontWeight.Bold) },
+                    title = {
+                        Text(
+                            "SoundConnect",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
+                    },
                     navigationIcon = {
                         IconButton(onClick = { scope.launch { drawerState.open() } }) {
                             Icon(Icons.Default.Menu, "Menú", tint = Color.White)
@@ -286,13 +295,23 @@ fun HomeScreen(
                 }
             }
         ) { paddingValues ->
-            Column(Modifier.fillMaxSize().background(Black).padding(paddingValues)) {
+            Column(Modifier
+                .fillMaxSize()
+                .background(Black)
+                .padding(paddingValues)) {
 
                 OutlinedTextField(
                     value = searchText,
                     onValueChange = { searchText = it; viewmodel.searchMusicFromDeezer(it) },
-                    modifier = Modifier.fillMaxWidth().padding(16.dp),
-                    placeholder = { Text(stringResource(id = R.string.search_hint), color = Color.Gray) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    placeholder = {
+                        Text(
+                            stringResource(id = R.string.search_hint),
+                            color = Color.Gray
+                        )
+                    },
                     leadingIcon = { Icon(Icons.Default.Search, "Buscar", tint = Color.Gray) },
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Purple40,
@@ -303,11 +322,16 @@ fun HomeScreen(
                     singleLine = true
                 )
 
-                LazyColumn(modifier = Modifier.weight(1f), contentPadding = PaddingValues(bottom = 16.dp)) {
+                LazyColumn(
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(bottom = 16.dp)
+                ) {
                     if (isLoading) {
                         item {
                             Box(
-                                modifier = Modifier.fillMaxWidth().height(200.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(200.dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 CircularProgressIndicator(color = Purple40)
@@ -316,10 +340,19 @@ fun HomeScreen(
                     } else {
                         if (searchText.isBlank()) {
                             item {
-                                Text(stringResource(id = R.string.popular_artists), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 22.sp, modifier = Modifier.padding(16.dp))
+                                Text(
+                                    stringResource(id = R.string.popular_artists),
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 22.sp,
+                                    modifier = Modifier.padding(16.dp)
+                                )
                             }
                             item {
-                                LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                                LazyRow(
+                                    contentPadding = PaddingValues(horizontal = 16.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                ) {
                                     items(recommendedArtists) { artist ->
                                         ArtistItem(artist = artist, onItemSelected = {
                                             val artistName = artist.name.orEmpty()
@@ -330,7 +363,17 @@ fun HomeScreen(
                                 }
                             }
                             item {
-                                Text(stringResource(id = R.string.top_hits), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 22.sp, modifier = Modifier.padding(start = 16.dp, top = 24.dp, bottom = 8.dp))
+                                Text(
+                                    stringResource(id = R.string.top_hits),
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 22.sp,
+                                    modifier = Modifier.padding(
+                                        start = 16.dp,
+                                        top = 24.dp,
+                                        bottom = 8.dp
+                                    )
+                                )
                             }
                             items(recommendedSongs) { track ->
                                 val isFav = favorites.any { it.title == track.description }
@@ -367,13 +410,29 @@ fun TrackItem(
     onItemSelected: () -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().clickable { onItemSelected() }.padding(horizontal = 16.dp, vertical = 6.dp).background(Color(0xFF1E1E1E), RoundedCornerShape(8.dp)).padding(12.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onItemSelected() }
+            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .background(Color(0xFF1E1E1E), RoundedCornerShape(8.dp))
+            .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        AsyncImage(model = track.image, contentDescription = "Carátula", modifier = Modifier.size(48.dp).clip(RoundedCornerShape(4.dp)))
+        AsyncImage(
+            model = track.image,
+            contentDescription = "Carátula",
+            modifier = Modifier
+                .size(48.dp)
+                .clip(RoundedCornerShape(4.dp))
+        )
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = track.description.orEmpty(), color = Color.White, fontWeight = FontWeight.Bold, maxLines = 1)
+            Text(
+                text = track.description.orEmpty(),
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1
+            )
             Text(text = track.name.orEmpty(), color = Color.Gray, fontSize = 12.sp, maxLines = 1)
         }
 
@@ -398,25 +457,66 @@ fun PlayerComponent(
     onCancelSelected: () -> Unit
 ) {
     val icon = if (player.play == true) R.drawable.ic_pause else R.drawable.ic_play
-    Column(Modifier.fillMaxWidth().background(Purple40)) {
+    Column(Modifier
+        .fillMaxWidth()
+        .background(Purple40)) {
         Slider(
             value = progress, onValueChange = onProgressChange,
-            modifier = Modifier.fillMaxWidth().height(20.dp).padding(horizontal = 8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(20.dp)
+                .padding(horizontal = 8.dp),
             colors = SliderDefaults.colors(thumbColor = Color.White, activeTrackColor = Color.White)
         )
-        Row(Modifier.height(45.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(text = player.artist?.description.orEmpty(), modifier = Modifier.padding(horizontal = 12.dp).weight(1f), color = Color.White, maxLines = 1)
-            Image(painter = painterResource(id = icon), contentDescription = "play/pause", modifier = Modifier.size(40.dp).clickable { onPlaySelected() })
-            Image(painter = painterResource(id = R.drawable.ic_close), contentDescription = "Close", modifier = Modifier.size(40.dp).clickable { onCancelSelected() })
+        Row(Modifier
+            .height(45.dp)
+            .fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = player.artist?.description.orEmpty(),
+                modifier = Modifier
+                    .padding(horizontal = 12.dp)
+                    .weight(1f),
+                color = Color.White,
+                maxLines = 1
+            )
+            Image(
+                painter = painterResource(id = icon),
+                contentDescription = "play/pause",
+                modifier = Modifier
+                    .size(40.dp)
+                    .clickable { onPlaySelected() })
+            Image(
+                painter = painterResource(id = R.drawable.ic_close),
+                contentDescription = "Close",
+                modifier = Modifier
+                    .size(40.dp)
+                    .clickable { onCancelSelected() })
         }
     }
 }
 
 @Composable
 fun ArtistItem(artist: Artist, onItemSelected: () -> Unit) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable { onItemSelected() }.width(80.dp)) {
-        AsyncImage(model = artist.image, contentDescription = "Artists image", modifier = Modifier.size(70.dp).clip(CircleShape))
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .clickable { onItemSelected() }
+            .width(80.dp)
+    ) {
+        AsyncImage(
+            model = artist.image,
+            contentDescription = "Artists image",
+            modifier = Modifier
+                .size(70.dp)
+                .clip(CircleShape)
+        )
         Spacer(modifier = Modifier.height(8.dp))
-        Text(text = artist.name.orEmpty(), color = Color.White, fontSize = 12.sp, maxLines = 1, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        Text(
+            text = artist.name.orEmpty(),
+            color = Color.White,
+            fontSize = 12.sp,
+            maxLines = 1,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
     }
 }

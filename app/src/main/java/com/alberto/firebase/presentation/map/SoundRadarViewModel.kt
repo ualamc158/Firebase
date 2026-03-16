@@ -31,7 +31,7 @@ class SoundRadarViewModel : ViewModel() {
     private val _usersNearby = MutableStateFlow<List<UserLocation>>(emptyList())
     val usersNearby: StateFlow<List<UserLocation>> = _usersNearby
 
-    // 🌟 Lista para no repetir la misma notificación 100 veces
+
     private val notifiedUsers = mutableSetOf<String>()
 
     init {
@@ -61,16 +61,18 @@ class SoundRadarViewModel : ViewModel() {
                     }
                 }
         } catch (e: SecurityException) {
-            // Si el usuario denegó los permisos, salta aquí.
+
         }
     }
 
     private fun listenToNearbyUsers() {
         database.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                val locations = snapshot.children.mapNotNull { it.getValue(UserLocation::class.java) }
+                val locations =
+                    snapshot.children.mapNotNull { it.getValue(UserLocation::class.java) }
                 _usersNearby.value = locations
             }
+
             override fun onCancelled(error: DatabaseError) {}
         })
     }
@@ -80,7 +82,7 @@ class SoundRadarViewModel : ViewModel() {
         database.child(userId).removeValue()
     }
 
-    // 🌟 NUEVO: COMPROBAR DISTANCIAS Y LANZAR NOTIFICACIÓN
+
     @SuppressLint("MissingPermission")
     fun checkProximity(context: Context) {
         try {
@@ -91,21 +93,27 @@ class SoundRadarViewModel : ViewModel() {
                     val others = _usersNearby.value
 
                     for (user in others) {
-                        if (user.email == currentEmail) continue // No nos medimos a nosotros mismos
+                        if (user.email == currentEmail) continue
 
-                        // Calculamos la distancia en metros
+
                         val results = FloatArray(1)
-                        Location.distanceBetween(myLoc.latitude, myLoc.longitude, user.latitude, user.longitude, results)
+                        Location.distanceBetween(
+                            myLoc.latitude,
+                            myLoc.longitude,
+                            user.latitude,
+                            user.longitude,
+                            results
+                        )
                         val distanceInMeters = results[0]
 
-                        if (distanceInMeters < 50) { // 🌟 SI ESTÁ A MENOS DE 50 METROS
+                        if (distanceInMeters < 50) {
                             val userEmailKey = user.email ?: continue
                             if (!notifiedUsers.contains(userEmailKey)) {
                                 sendNotification(context, user)
-                                notifiedUsers.add(userEmailKey) // Lo marcamos para no spamear
+                                notifiedUsers.add(userEmailKey)
                             }
                         } else {
-                            // Si se aleja, lo borramos de la lista para volver a avisar si se acerca
+
                             user.email?.let { notifiedUsers.remove(it) }
                         }
                     }
@@ -116,14 +124,19 @@ class SoundRadarViewModel : ViewModel() {
         }
     }
 
-    // 🌟 NUEVO: CONSTRUCCIÓN DE LA NOTIFICACIÓN ANDROID
+
     private fun sendNotification(context: Context, user: UserLocation) {
         val channelId = "music_tags_channel"
 
-        // En Android 8+ hay que crear un "Canal" de notificaciones
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(channelId, "Music Tags Alerts", NotificationManager.IMPORTANCE_HIGH)
-            val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val channel = NotificationChannel(
+                channelId,
+                "Music Tags Alerts",
+                NotificationManager.IMPORTANCE_HIGH
+            )
+            val manager =
+                context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             manager.createNotificationChannel(channel)
         }
 
@@ -135,7 +148,11 @@ class SoundRadarViewModel : ViewModel() {
             .setAutoCancel(true)
 
         // Verificamos el permiso en tiempo real antes de lanzar la notificación
-        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
             val notificationId = user.email?.hashCode() ?: System.currentTimeMillis().toInt()
             NotificationManagerCompat.from(context).notify(notificationId, builder.build())
         }
