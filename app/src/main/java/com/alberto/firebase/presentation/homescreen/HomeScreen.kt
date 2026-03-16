@@ -5,6 +5,8 @@ import android.app.Activity
 import android.content.Context
 import android.hardware.Sensor
 import android.hardware.SensorManager
+import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -27,11 +29,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.alberto.firebase.R
@@ -45,6 +49,18 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
+import java.io.File
+
+fun createImageUri(context: Context): Uri {
+    val imagePath = File(context.cacheDir, "camera_images")
+    imagePath.mkdirs()
+    val newFile = File(imagePath, "profile_pic.jpg")
+    return FileProvider.getUriForFile(
+        context,
+        "${context.packageName}.fileprovider",
+        newFile
+    )
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,38 +81,84 @@ fun HomeScreen(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
-    // 🌟 LANZADOR DE PERMISOS: Maneja el cartelito de Android
-    val locationPermissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        val granted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
-                permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
-        if (granted) {
-            // Si el usuario acepta, intentamos emitir la ubicación
-            viewmodel.startMusicAndEmitLocation(context, radarViewModel)
+    var searchText by remember { mutableStateOf("") }
+
+    val profilePictureUrl by viewmodel.profilePictureUrl.collectAsState()
+    var showImageSourceDialog by remember { mutableStateOf(false) }
+    var cameraImageUri by remember { mutableStateOf<Uri?>(null) }
+
+    // 📸 GALERÍA (¡Ahora pasamos context!)
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let { viewmodel.uploadProfilePicture(context, it) }
+    }
+
+    // 📸 CÁMARA (¡Ahora pasamos context!)
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success) {
+            cameraImageUri?.let { viewmodel.uploadProfilePicture(context, it) }
         }
     }
 
-    // 🌟 GESTIÓN DEL SENSOR DE AGITADO (SHAKE)
+    if (showImageSourceDialog) {
+        AlertDialog(
+            onDismissRequest = { showImageSourceDialog = false },
+            title = { Text("Foto de perfil") },
+            text = { Text("¿Desde dónde quieres subir la foto?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showImageSourceDialog = false
+                    val uri = createImageUri(context)
+                    cameraImageUri = uri
+                    cameraLauncher.launch(uri)
+                }) {
+                    Text("Cámara", color = Purple40)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showImageSourceDialog = false
+                    galleryLauncher.launch("image/*")
+                }) {
+                    Text("Galería", color = Purple40)
+                }
+            },
+            containerColor = Color(0xFF1E1E1E),
+            titleContentColor = Color.White,
+            textContentColor = Color.LightGray
+        )
+    }
+
+    if (drawerState.isOpen) {
+        BackHandler { scope.launch { drawerState.close() } }
+    } else if (searchText.isNotBlank()) {
+        BackHandler {
+            searchText = ""
+            viewmodel.searchMusicFromDeezer("")
+        }
+    }
+
+    LaunchedEffect(auth.currentUser?.uid) {
+        if (auth.currentUser != null) {
+            viewmodel.loadProfilePicture()
+        }
+        viewmodel.onRemoveFromMap = { radarViewModel.removeCurrentLocation() }
+    }
+
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { viewmodel.startMusicAndEmitLocation(context, radarViewModel) }
+
     val sensorManager = remember { context.getSystemService(Context.SENSOR_SERVICE) as SensorManager }
     val accelerometer = remember { sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) }
 
     DisposableEffect(Unit) {
-        val shakeDetector = ShakeDetector {
-            // Cuando detecta el agitado, llama a esta función del viewmodel
-            viewmodel.playRandomSong()
-        }
-
-        sensorManager.registerListener(
-            shakeDetector,
-            accelerometer,
-            SensorManager.SENSOR_DELAY_UI
-        )
-
-        onDispose {
-            // Evitamos gastar batería cuando la HomeScreen no está visible
-            sensorManager.unregisterListener(shakeDetector)
-        }
+        val shakeDetector = ShakeDetector { viewmodel.playRandomSong() }
+        sensorManager.registerListener(shakeDetector, accelerometer, SensorManager.SENSOR_DELAY_UI)
+        onDispose { sensorManager.unregisterListener(shakeDetector) }
     }
 
     ModalNavigationDrawer(
@@ -107,13 +169,28 @@ fun HomeScreen(
                 drawerContainerColor = Color(0xFF1E1E1E),
                 drawerContentColor = Color.White
             ) {
-                Spacer(Modifier.height(24.dp))
-                Text(
-                    "Menú Principal",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(16.dp)
-                )
+                Spacer(Modifier.height(32.dp))
+
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    AsyncImage(
+                        model = profilePictureUrl ?: "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png",
+                        contentDescription = "Foto de perfil",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .size(120.dp)
+                            .clip(CircleShape)
+                            .clickable {
+                                showImageSourceDialog = true
+                            }
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text("Toca para cambiar foto", fontSize = 12.sp, color = Color.Gray)
+                }
+
+                Spacer(Modifier.height(16.dp))
                 HorizontalDivider(color = Color.Gray)
                 Spacer(Modifier.height(16.dp))
 
@@ -149,13 +226,7 @@ fun HomeScreen(
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = {
-                        Text(
-                            "SoundConnect",
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold
-                        )
-                    },
+                    title = { Text("SoundConnect", color = Color.White, fontWeight = FontWeight.Bold) },
                     navigationIcon = {
                         IconButton(onClick = { scope.launch { drawerState.open() } }) {
                             Icon(Icons.Default.Menu, "Menú", tint = Color.White)
@@ -181,32 +252,28 @@ fun HomeScreen(
                         progress = progress,
                         onProgressChange = { newProgress -> viewmodel.seekAudio(newProgress) },
                         onPlaySelected = {
-                            // 🌟 ACCIÓN AL DAR PLAY: Pedir permisos y emitir ubicación
-                            locationPermissionLauncher.launch(
-                                arrayOf(
-                                    Manifest.permission.ACCESS_FINE_LOCATION,
-                                    Manifest.permission.ACCESS_COARSE_LOCATION
+                            if (it.play == true) {
+                                viewmodel.startMusicAndEmitLocation(context, radarViewModel)
+                            } else {
+                                locationPermissionLauncher.launch(
+                                    arrayOf(
+                                        Manifest.permission.ACCESS_FINE_LOCATION,
+                                        Manifest.permission.ACCESS_COARSE_LOCATION
+                                    )
                                 )
-                            )
-                            viewmodel.startMusicAndEmitLocation(context, radarViewModel)
+                            }
                         },
                         onCancelSelected = { viewmodel.onCancelSelected() }
                     )
                 }
             }
         ) { paddingValues ->
-            Column(Modifier
-                .fillMaxSize()
-                .background(Black)
-                .padding(paddingValues)) {
-                var searchText by remember { mutableStateOf("") }
+            Column(Modifier.fillMaxSize().background(Black).padding(paddingValues)) {
 
                 OutlinedTextField(
                     value = searchText,
                     onValueChange = { searchText = it; viewmodel.searchMusicFromDeezer(it) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
                     placeholder = { Text("¿Qué quieres escuchar?", color = Color.Gray) },
                     leadingIcon = { Icon(Icons.Default.Search, "Buscar", tint = Color.Gray) },
                     colors = OutlinedTextFieldDefaults.colors(
@@ -218,51 +285,31 @@ fun HomeScreen(
                     singleLine = true
                 )
 
-                LazyColumn(
-                    modifier = Modifier.weight(1f),
-                    contentPadding = PaddingValues(bottom = 16.dp)
-                ) {
+                LazyColumn(modifier = Modifier.weight(1f), contentPadding = PaddingValues(bottom = 16.dp)) {
                     if (searchText.isBlank()) {
                         item {
-                            Text(
-                                "Artistas Populares",
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 22.sp,
-                                modifier = Modifier.padding(16.dp)
-                            )
+                            Text("Artistas Populares", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 22.sp, modifier = Modifier.padding(16.dp))
                         }
                         item {
-                            LazyRow(
-                                contentPadding = PaddingValues(horizontal = 16.dp),
-                                horizontalArrangement = Arrangement.spacedBy(16.dp)
-                            ) {
-                                items(recommendedArtists) { ArtistItem(artist = it, { }) }
+                            LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                                items(recommendedArtists) { artist ->
+                                    ArtistItem(artist = artist, onItemSelected = {
+                                        val artistName = artist.name.orEmpty()
+                                        searchText = artistName
+                                        viewmodel.searchMusicFromDeezer(artistName)
+                                    })
+                                }
                             }
                         }
                         item {
-                            Text(
-                                "Top Hits Globales",
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 22.sp,
-                                modifier = Modifier.padding(
-                                    start = 16.dp,
-                                    top = 24.dp,
-                                    bottom = 8.dp
-                                )
-                            )
+                            Text("Top Hits Globales", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 22.sp, modifier = Modifier.padding(start = 16.dp, top = 24.dp, bottom = 8.dp))
                         }
                         items(recommendedSongs) { track ->
-                            TrackItem(
-                                track = track,
-                                onItemSelected = { viewmodel.addPlayer(track) })
+                            TrackItem(track = track, onItemSelected = { viewmodel.addPlayer(track) })
                         }
                     } else {
                         items(searchResults) { track ->
-                            TrackItem(
-                                track = track,
-                                onItemSelected = { viewmodel.addPlayer(track) })
+                            TrackItem(track = track, onItemSelected = { viewmodel.addPlayer(track) })
                         }
                     }
                 }
@@ -274,29 +321,13 @@ fun HomeScreen(
 @Composable
 fun TrackItem(track: Artist, onItemSelected: () -> Unit) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onItemSelected() }
-            .padding(horizontal = 16.dp, vertical = 6.dp)
-            .background(Color(0xFF1E1E1E), RoundedCornerShape(8.dp))
-            .padding(12.dp),
+        modifier = Modifier.fillMaxWidth().clickable { onItemSelected() }.padding(horizontal = 16.dp, vertical = 6.dp).background(Color(0xFF1E1E1E), RoundedCornerShape(8.dp)).padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        AsyncImage(
-            model = track.image,
-            contentDescription = "Carátula",
-            modifier = Modifier
-                .size(48.dp)
-                .clip(RoundedCornerShape(4.dp))
-        )
+        AsyncImage(model = track.image, contentDescription = "Carátula", modifier = Modifier.size(48.dp).clip(RoundedCornerShape(4.dp)))
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = track.description.orEmpty(),
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1
-            )
+            Text(text = track.description.orEmpty(), color = Color.White, fontWeight = FontWeight.Bold, maxLines = 1)
             Text(text = track.name.orEmpty(), color = Color.Gray, fontSize = 12.sp, maxLines = 1)
         }
         Icon(Icons.Default.PlayArrow, contentDescription = "Reproducir", tint = Purple40)
@@ -312,67 +343,25 @@ fun PlayerComponent(
     onCancelSelected: () -> Unit
 ) {
     val icon = if (player.play == true) R.drawable.ic_pause else R.drawable.ic_play
-    Column(Modifier
-        .fillMaxWidth()
-        .background(Purple40)) {
+    Column(Modifier.fillMaxWidth().background(Purple40)) {
         Slider(
-            value = progress,
-            onValueChange = onProgressChange,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(20.dp)
-                .padding(horizontal = 8.dp),
+            value = progress, onValueChange = onProgressChange,
+            modifier = Modifier.fillMaxWidth().height(20.dp).padding(horizontal = 8.dp),
             colors = SliderDefaults.colors(thumbColor = Color.White, activeTrackColor = Color.White)
         )
-        Row(Modifier
-            .height(45.dp)
-            .fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = player.artist?.description.orEmpty(),
-                modifier = Modifier
-                    .padding(horizontal = 12.dp)
-                    .weight(1f),
-                color = Color.White,
-                maxLines = 1
-            )
-            Image(
-                painter = painterResource(id = icon),
-                contentDescription = "play/pause",
-                modifier = Modifier
-                    .size(40.dp)
-                    .clickable { onPlaySelected() })
-            Image(
-                painter = painterResource(id = R.drawable.ic_close),
-                contentDescription = "Close",
-                modifier = Modifier
-                    .size(40.dp)
-                    .clickable { onCancelSelected() })
+        Row(Modifier.height(45.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(text = player.artist?.description.orEmpty(), modifier = Modifier.padding(horizontal = 12.dp).weight(1f), color = Color.White, maxLines = 1)
+            Image(painter = painterResource(id = icon), contentDescription = "play/pause", modifier = Modifier.size(40.dp).clickable { onPlaySelected() })
+            Image(painter = painterResource(id = R.drawable.ic_close), contentDescription = "Close", modifier = Modifier.size(40.dp).clickable { onCancelSelected() })
         }
     }
 }
 
 @Composable
 fun ArtistItem(artist: Artist, onItemSelected: () -> Unit) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .clickable { onItemSelected() }
-            .width(80.dp)
-    ) {
-        AsyncImage(
-            model = artist.image,
-            contentDescription = "Artists image",
-            modifier = Modifier
-                .size(70.dp)
-                .clip(CircleShape)
-        )
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable { onItemSelected() }.width(80.dp)) {
+        AsyncImage(model = artist.image, contentDescription = "Artists image", modifier = Modifier.size(70.dp).clip(CircleShape))
         Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = artist.name.orEmpty(),
-            color = Color.White,
-            fontSize = 12.sp,
-            maxLines = 1,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-        )
+        Text(text = artist.name.orEmpty(), color = Color.White, fontSize = 12.sp, maxLines = 1, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
     }
 }

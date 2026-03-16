@@ -25,30 +25,32 @@ class SoundRadarViewModel : ViewModel() {
         listenToNearbyUsers()
     }
 
-    // 🌟 ESTA ES LA FUNCIÓN QUE TE DABA ERROR:
     @SuppressLint("MissingPermission")
     fun emitCurrentLocation(context: Context, songTitle: String, artistName: String) {
-        val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
+        try {
+            val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
 
-        // Intentamos obtener la ubicación actual con alta precisión
-        fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
-            .addOnSuccessListener { location ->
-                if (location != null) {
-                    val userId = auth.currentUser?.uid ?: return@addOnSuccessListener
-                    val userEmail = auth.currentUser?.email ?: "Anónimo"
+            fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
+                .addOnSuccessListener { location ->
+                    if (location != null) {
+                        val userId = auth.currentUser?.uid ?: return@addOnSuccessListener
+                        val userEmail = auth.currentUser?.email ?: "Anónimo"
 
-                    val myPresence = UserLocation(
-                        email = userEmail,
-                        songTitle = songTitle,
-                        artistName = artistName,
-                        latitude = location.latitude,
-                        longitude = location.longitude
-                    )
+                        val myPresence = UserLocation(
+                            email = userEmail,
+                            songTitle = songTitle,
+                            artistName = artistName,
+                            latitude = location.latitude,
+                            longitude = location.longitude
+                        )
 
-                    // Guardamos la información en Realtime Database
-                    database.child(userId).setValue(myPresence)
+                        database.child(userId).setValue(myPresence)
+                    }
                 }
-            }
+        } catch (e: SecurityException) {
+            // Si el usuario denegó los permisos, salta aquí.
+            // Puede seguir escuchando música, pero no aparecerá en el mapa.
+        }
     }
 
     private fun listenToNearbyUsers() {

@@ -1,9 +1,12 @@
 package com.alberto.firebase.presentation.homescreen
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.net.Uri
+import android.util.Base64
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -12,7 +15,8 @@ import com.alberto.firebase.data.model.Player
 import com.alberto.firebase.data.network.RetrofitClient
 import com.alberto.firebase.presentation.map.SoundRadarViewModel
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.storage.FirebaseStorage
+import com.google.firebase.database.FirebaseDatabase
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -20,7 +24,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import java.util.UUID
+import java.io.ByteArrayOutputStream
 
 class HomeViewmodel : ViewModel() {
 
@@ -39,11 +43,10 @@ class HomeViewmodel : ViewModel() {
     private val _songProgress = MutableStateFlow(0f)
     val songProgress: StateFlow<Float> = _songProgress
 
-    // 🌟 ESTADO PARA LA FOTO DE PERFIL (Para la Captura Multimedia)
-    private val _profilePictureUrl = MutableStateFlow<String?>(null)
-    val profilePictureUrl: StateFlow<String?> = _profilePictureUrl
+    // 🌟 AHORA ES 'Any?' PORQUE PUEDE GUARDAR UN TEXTO (URL) O UNA FOTO REAL (Bitmap)
+    private val _profilePictureUrl = MutableStateFlow<Any?>(null)
+    val profilePictureUrl: StateFlow<Any?> = _profilePictureUrl
 
-    // 🌟 CHIVATO PARA EL MAPA: Avisa cuando hay que borrar el marcador
     var onRemoveFromMap: (() -> Unit)? = null
 
     private var mediaPlayer: MediaPlayer? = null
@@ -56,9 +59,6 @@ class HomeViewmodel : ViewModel() {
     private fun loadRecommendations() {
         viewModelScope.launch {
             try {
-                Log.d("DEEZER_API", "Iniciando peticiones en paralelo a Deezer...")
-
-                // 1. Búsquedas específicas de Artistas Españoles
                 val nombresArtistas = listOf(
                     "Estopa", "Melendi", "Fito y Fitipaldis",
                     "Dani Martín", "Aitana", "Rosalía",
@@ -77,7 +77,6 @@ class HomeViewmodel : ViewModel() {
                 }
 
                 val tracksArtistas = peticionesArtistas.awaitAll().filterNotNull()
-                Log.d("DEEZER_API", "¡Éxito! Artistas recibidos: ${tracksArtistas.size}")
 
                 _recommendedArtists.value = tracksArtistas.map { track ->
                     Artist(
@@ -87,9 +86,7 @@ class HomeViewmodel : ViewModel() {
                     )
                 }.distinctBy { it.name }.take(10)
 
-                // 2. Búsqueda general para las canciones de abajo
                 val songsRes = RetrofitClient.apiService.searchTracks("pop rock español")
-                Log.d("DEEZER_API", "¡Éxito! Canciones recibidas: ${songsRes.data.size}")
 
                 _recommendedSongs.value = songsRes.data.map {
                     Artist(
@@ -124,8 +121,6 @@ class HomeViewmodel : ViewModel() {
         mediaPlayer = null
         stopProgressTracking()
         _player.value = Player(artist = selectedArtist, play = false)
-
-        // Al cambiar de canción forzamos a que se quite del mapa hasta que le den a Play
         onRemoveFromMap?.invoke()
     }
 
@@ -146,14 +141,11 @@ class HomeViewmodel : ViewModel() {
                 _player.value = _player.value?.copy(play = false)
                 stopProgressTracking()
                 _songProgress.value = 0f
-
-                // 🌟 Cuando la canción termina sola, desapareces del mapa
                 onRemoveFromMap?.invoke()
             }
         }
     }
 
-    // 🌟 FUNCIÓN MAESTRA DE REPRODUCCIÓN (Maneja Play, Pause y el Mapa)
     fun startMusicAndEmitLocation(context: Context, radarViewModel: SoundRadarViewModel) {
         val currentPlayer = _player.value ?: return
         val currentArtist = currentPlayer.artist ?: return
@@ -161,22 +153,12 @@ class HomeViewmodel : ViewModel() {
         val audioUrl = currentArtist.audioUrl
 
         if (!isPlaying) {
-            // AL DARLE AL PLAY
             _player.value = currentPlayer.copy(play = true)
             playAudio(audioUrl)
-
-            // Apareces en el mapa
-            radarViewModel.emitCurrentLocation(
-                context = context,
-                songTitle = currentArtist.description ?: "Desconocida",
-                artistName = currentArtist.name ?: "Artista"
-            )
+            radarViewModel.emitCurrentLocation(context, currentArtist.description ?: "Desconocida", currentArtist.name ?: "Artista")
         } else {
-            // AL DARLE AL PAUSE
             _player.value = currentPlayer.copy(play = false)
             mediaPlayer?.pause()
-
-            // 🌟 Desapareces del mapa al pausar
             onRemoveFromMap?.invoke()
         }
     }
@@ -188,8 +170,6 @@ class HomeViewmodel : ViewModel() {
         mediaPlayer = null
         stopProgressTracking()
         _songProgress.value = 0f
-
-        // 🌟 Desapareces del mapa al cerrar el reproductor
         onRemoveFromMap?.invoke()
     }
 
@@ -221,9 +201,7 @@ class HomeViewmodel : ViewModel() {
         val allSongs = _recommendedSongs.value
         if (allSongs.isNotEmpty()) {
             val randomSong = allSongs.random()
-
             addPlayer(randomSong)
-
             val currentPlayer = _player.value
             if (currentPlayer != null) {
                 _player.value = currentPlayer.copy(play = true)
@@ -240,25 +218,88 @@ class HomeViewmodel : ViewModel() {
     }
 
     // -------------------------------------------------------------------
-    // 🌟 NUEVA SECCIÓN: CAPTURA MULTIMEDIA (Subir foto a Firebase Storage)
+    // 🌟 SECCIÓN: CAPTURA MULTIMEDIA (El truco del Base64)
     // -------------------------------------------------------------------
-    fun uploadProfilePicture(imageUri: Uri) {
-        val storageRef = FirebaseStorage.getInstance().reference
-        val user = FirebaseAuth.getInstance().currentUser
+    fun uploadProfilePicture(context: Context, imageUri: Uri) {
+        val user = FirebaseAuth.getInstance().currentUser ?: return
 
-        // Guarda la imagen en la carpeta 'profiles' con un nombre único
-        val fileRef = storageRef.child("profiles/${user?.uid ?: UUID.randomUUID()}.jpg")
+        // 1. Actualización optimista: lo mostramos en pantalla enseguida
+        _profilePictureUrl.value = imageUri
 
-        fileRef.putFile(imageUri)
-            .addOnSuccessListener {
-                // Cuando se sube, pedimos la URL para mostrarla en pantalla
-                fileRef.downloadUrl.addOnSuccessListener { uri ->
-                    _profilePictureUrl.value = uri.toString()
-                    Log.d("STORAGE", "Foto subida con éxito: $uri")
+        // 2. Comprimimos y subimos por detrás en un hilo secundario
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                // Leemos el archivo original
+                val inputStream = context.contentResolver.openInputStream(imageUri)
+                val originalBitmap = BitmapFactory.decodeStream(inputStream)
+                inputStream?.close()
+
+                // 🌟 SOLUCIÓN A LA ROTACIÓN: Leemos la etiqueta EXIF de la cámara
+                var rotatedBitmap = originalBitmap
+                val exifStream = context.contentResolver.openInputStream(imageUri)
+                if (exifStream != null) {
+                    val exif = android.media.ExifInterface(exifStream)
+                    val orientation = exif.getAttributeInt(
+                        android.media.ExifInterface.TAG_ORIENTATION,
+                        android.media.ExifInterface.ORIENTATION_NORMAL
+                    )
+                    val matrix = android.graphics.Matrix()
+                    // Si la foto dice que está girada, la enderezamos con la matriz
+                    when (orientation) {
+                        android.media.ExifInterface.ORIENTATION_ROTATE_90 -> matrix.postRotate(90f)
+                        android.media.ExifInterface.ORIENTATION_ROTATE_180 -> matrix.postRotate(180f)
+                        android.media.ExifInterface.ORIENTATION_ROTATE_270 -> matrix.postRotate(270f)
+                    }
+                    // Aplicamos el giro definitivo
+                    rotatedBitmap = Bitmap.createBitmap(
+                        originalBitmap, 0, 0,
+                        originalBitmap.width, originalBitmap.height,
+                        matrix, true
+                    )
+                    exifStream.close()
                 }
+
+                // Lo hacemos más pequeño (400x400) para no bloquear la base de datos
+                val scaledBitmap = Bitmap.createScaledBitmap(rotatedBitmap, 400, 400, true)
+
+                // Lo convertimos en un texto gigante
+                val outputStream = ByteArrayOutputStream()
+                scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 60, outputStream)
+                val imageBytes = outputStream.toByteArray()
+                val base64String = Base64.encodeToString(imageBytes, Base64.DEFAULT)
+
+                // Lo guardamos en Realtime Database (¡Gratis!)
+                val database = FirebaseDatabase.getInstance().reference
+                database.child("users").child(user.uid).child("profilePicture").setValue(base64String)
+                    .addOnSuccessListener {
+                        Log.d("DB_PROFILE", "¡Foto subida como texto a Realtime Database!")
+                    }
+            } catch (e: Exception) {
+                Log.e("DB_PROFILE", "Error al procesar la imagen: ${e.message}")
             }
-            .addOnFailureListener {
-                Log.e("STORAGE", "Error al subir foto: ${it.message}")
+        }
+    }
+
+    fun loadProfilePicture() {
+        val user = FirebaseAuth.getInstance().currentUser ?: return
+        val database = FirebaseDatabase.getInstance().reference
+
+        // Buscamos el texto gigante en la base de datos
+        database.child("users").child(user.uid).child("profilePicture").get()
+            .addOnSuccessListener { snapshot ->
+                val base64String = snapshot.getValue(String::class.java)
+                if (base64String != null) {
+                    try {
+                        // Reconstruimos la foto a partir del texto
+                        val imageBytes = Base64.decode(base64String, Base64.DEFAULT)
+                        val bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+
+                        // Coil pinta el Bitmap maravillosamente
+                        _profilePictureUrl.value = bitmap
+                    } catch (e: Exception) {
+                        Log.e("DB_PROFILE", "Error reconstruyendo foto: ${e.message}")
+                    }
+                }
             }
     }
 }
