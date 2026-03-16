@@ -13,44 +13,58 @@ services = "4.4.0"
 crashlytics = "3.0.2"
 navigationCompose = "2.7.7"
 material3 = "1.4.0"
-coil="2.7.0"
+coil = "2.7.0"
 playServicesAuth = "20.7.0"
+playServicesLocation = "21.3.0"
+retrofit = "2.9.0"
+osmdroid = "6.1.18"
 
 [libraries]
+# --- AndroidX & UI Core ---
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
-junit = { group = "junit", name = "junit", version.ref = "junit" }
-androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
-androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
+androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
+androidx-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
+androidx-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
+
+# --- Compose BOM & Libraries ---
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
 androidx-compose-ui = { group = "androidx.compose.ui", name = "ui" }
 androidx-compose-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
 androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
 androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
-androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
-androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
 
-firebase-bom = {module="com.google.firebase:firebase-bom",version.ref="firebaseBom"}
-firebase-crashlytics = {module="com.google.firebase:firebase-crashlytics"}
-firebase-analytics = {module="com.google.firebase:firebase-analytics"}
-firebase-auth = {module="com.google.firebase:firebase-auth-ktx"}
-firebase-firestore = {module="com.google.firebase:firebase-firestore"}
-firebase-realtime-database = {module="com.google.firebase:firebase-database-ktx"}
+# --- Firebase ---
+firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
+firebase-crashlytics = { module = "com.google.firebase:firebase-crashlytics" }
+firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
+firebase-auth = { module = "com.google.firebase:firebase-auth-ktx" }
+firebase-firestore = { module = "com.google.firebase:firebase-firestore" }
+firebase-realtime-database = { module = "com.google.firebase:firebase-database-ktx" }
 
+# --- Network & Data ---
+retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
+converter-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "retrofit" }
+coil = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
 
-androidx-navigation-compose = {module="androidx.navigation:navigation-compose",version.ref="navigationCompose"}
-androidx-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
-
-coil={module="io.coil-kt:coil-compose",version.ref="coil"}
+# --- Mapas & Localización ---
+osmdroid = { module = "org.osmdroid:osmdroid-android", version.ref = "osmdroid" }
+play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "playServicesLocation" }
 play-services-auth = { module = "com.google.android.gms:play-services-auth", version.ref = "playServicesAuth" }
 
+
+# --- Testing ---
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
+androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
+androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
+androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
-
-googleServices= {id="com.google.gms.google-services",version.ref="services"}
-crashlytics = {id="com.google.firebase.crashlytics",version.ref="crashlytics"}
+googleServices = { id = "com.google.gms.google-services", version.ref = "services" }
+crashlytics = { id = "com.google.firebase.crashlytics", version.ref = "crashlytics" }

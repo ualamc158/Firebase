@@ -1,6 +1,7 @@
 package com.alberto.firebase
 
 import android.os.Bundle
+import android.preference.PreferenceManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -16,28 +17,32 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
+import org.osmdroid.config.Configuration
 
 class MainActivity : ComponentActivity() {
     private lateinit var navHostController: NavHostController
     private lateinit var auth: FirebaseAuth
-
-    //private lateinit var db: FirebaseFirestore
-
     private val modelViewModel = HomeViewmodel()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Esto le dice al servidor de mapas quién eres (tu paquete de app)
+        Configuration.getInstance().load(this, PreferenceManager.getDefaultSharedPreferences(this))
+        Configuration.getInstance().userAgentValue = packageName
+
         enableEdgeToEdge()
 
         auth = Firebase.auth
-        //db = Firebase.firestore
 
         setContent {
             navHostController = rememberNavController()
             FirebaseTheme {
-                Surface(modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background) {
-                    NavigationWrapper(navHostController,auth,modelViewModel)
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    NavigationWrapper(navHostController, auth, modelViewModel)
                 }
             }
         }
@@ -46,11 +51,7 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         val currentUser: FirebaseUser? = auth.currentUser
-        if(currentUser !=null){
-            //Navegar a la home
+        if (currentUser != null) {
         }
     }
 }
-
-
-

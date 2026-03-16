@@ -1,35 +1,99 @@
 package com.alberto.firebase
 
 import androidx.compose.runtime.Composable
-import androidx.navigation.compose.NavHost
 import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.alberto.firebase.presentation.homescreen.HomeScreen
 import com.alberto.firebase.presentation.homescreen.HomeViewmodel
 import com.alberto.firebase.presentation.initial.InitialScreen
+import com.alberto.firebase.presentation.livechat.LiveChatScreen
+import com.alberto.firebase.presentation.livechat.LiveChatViewModel
 import com.alberto.firebase.presentation.login.LoginScreen
 import com.alberto.firebase.presentation.signup.SignupScreen
 import com.google.firebase.auth.FirebaseAuth
 
 @Composable
-fun NavigationWrapper(navHostController: NavHostController, auth: FirebaseAuth, homeViewModel: HomeViewmodel) {
-    NavHost(navHostController, startDestination="Initial") {
-        composable("Initial"){
+fun NavigationWrapper(
+    navHostController: NavHostController,
+    auth: FirebaseAuth,
+    homeViewModel: HomeViewmodel
+) {
+    val startDestination = if (auth.currentUser != null) "home" else "Initial"
+
+    NavHost(navHostController, startDestination = startDestination) {
+
+        composable("Initial") {
             InitialScreen(
-                auth = auth, // Añadimos el objeto de autenticación
+                auth = auth,
                 navigateToLogin = { navHostController.navigate("Login") },
                 navigateToSignUp = { navHostController.navigate("Signup") },
-                navigateToHome = { navHostController.navigate("home") } // Añadimos a dónde ir al tener éxito
+                navigateToHome = {
+                    navHostController.navigate("home") {
+                        popUpTo("Initial") { inclusive = true }
+                    }
+                }
             )
         }
-        composable("Login"){
-            LoginScreen(auth, navigateToHome = { navHostController.navigate("home") })
+
+        composable("Login") {
+            LoginScreen(
+                auth = auth,
+                navigateToHome = {
+                    navHostController.navigate("home") {
+                        popUpTo("Login") { inclusive = true }
+                        popUpTo("Initial") { inclusive = true }
+                    }
+                }
+            )
         }
-        composable("Signup"){
+
+        composable("Signup") {
             SignupScreen(auth)
         }
-        composable("home"){
-            HomeScreen(homeViewModel)
+
+        composable("home") {
+            HomeScreen(
+                viewmodel = homeViewModel,
+                auth = auth,
+                navigateToInitial = {
+                    navHostController.navigate("Initial") {
+                        popUpTo(0) { inclusive = true }
+                    }
+                },
+                navigateToChat = {
+                    navHostController.navigate("livechat")
+                },
+                navigateToRadar = {
+                    navHostController.navigate("radar") // 🌟 AQUÍ LLAMAMOS A LA RUTA DEL MAPA
+                }
+            )
+        }
+
+        composable("livechat") {
+            val liveViewModel: LiveChatViewModel = viewModel(
+                factory = object : ViewModelProvider.Factory {
+                    @Suppress("UNCHECKED_CAST")
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                        return LiveChatViewModel(auth) as T
+                    }
+                }
+            )
+
+            LiveChatScreen(
+                viewModel = liveViewModel,
+                onBack = { navHostController.popBackStack() }
+            )
+        }
+
+        // 🌟 ESTA ES LA RUTA DEL MAPA QUE PUEDE QUE FALTARA
+        composable("radar") {
+            com.alberto.firebase.presentation.map.SoundRadarScreen(
+                onBack = { navHostController.popBackStack() }
+            )
         }
     }
 }
