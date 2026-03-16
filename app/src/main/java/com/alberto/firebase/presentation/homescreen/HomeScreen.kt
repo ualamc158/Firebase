@@ -2,6 +2,9 @@ package com.alberto.firebase.presentation.homescreen
 
 import android.Manifest
 import android.app.Activity
+import android.content.Context
+import android.hardware.Sensor
+import android.hardware.SensorManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -37,6 +40,7 @@ import com.alberto.firebase.data.model.Player
 import com.alberto.firebase.presentation.map.SoundRadarViewModel
 import com.alberto.firebase.ui.theme.Black
 import com.alberto.firebase.ui.theme.Purple40
+import com.alberto.firebase.utils.ShakeDetector
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.firebase.auth.FirebaseAuth
@@ -46,7 +50,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun HomeScreen(
     viewmodel: HomeViewmodel = HomeViewmodel(),
-    radarViewModel: SoundRadarViewModel = viewModel(), // 🌟 Inyectamos el radar
+    radarViewModel: SoundRadarViewModel = viewModel(),
     auth: FirebaseAuth,
     navigateToInitial: () -> Unit,
     navigateToChat: () -> Unit,
@@ -70,6 +74,28 @@ fun HomeScreen(
         if (granted) {
             // Si el usuario acepta, intentamos emitir la ubicación
             viewmodel.startMusicAndEmitLocation(context, radarViewModel)
+        }
+    }
+
+    // 🌟 GESTIÓN DEL SENSOR DE AGITADO (SHAKE)
+    val sensorManager = remember { context.getSystemService(Context.SENSOR_SERVICE) as SensorManager }
+    val accelerometer = remember { sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) }
+
+    DisposableEffect(Unit) {
+        val shakeDetector = ShakeDetector {
+            // Cuando detecta el agitado, llama a esta función del viewmodel
+            viewmodel.playRandomSong()
+        }
+
+        sensorManager.registerListener(
+            shakeDetector,
+            accelerometer,
+            SensorManager.SENSOR_DELAY_UI
+        )
+
+        onDispose {
+            // Evitamos gastar batería cuando la HomeScreen no está visible
+            sensorManager.unregisterListener(shakeDetector)
         }
     }
 
@@ -104,8 +130,7 @@ fun HomeScreen(
                 NavigationDrawerItem(
                     label = { Text("Cerrar sesión") }, selected = false,
                     onClick = {
-                        val gso =
-                            GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).build()
+                        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).build()
                         GoogleSignIn.getClient(context, gso).signOut().addOnCompleteListener {
                             auth.signOut()
                             navigateToInitial()
@@ -246,7 +271,6 @@ fun HomeScreen(
     }
 }
 
-// ... (TrackItem, PlayerComponent y ArtistItem se mantienen iguales que antes)
 @Composable
 fun TrackItem(track: Artist, onItemSelected: () -> Unit) {
     Row(

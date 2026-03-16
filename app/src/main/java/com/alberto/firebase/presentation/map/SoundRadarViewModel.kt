@@ -60,4 +60,9 @@ class SoundRadarViewModel : ViewModel() {
             override fun onCancelled(error: DatabaseError) {}
         })
     }
+
+    fun removeCurrentLocation() {
+        val userId = auth.currentUser?.uid ?: return
+        database.child(userId).removeValue()
+    }
 }

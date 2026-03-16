@@ -49,6 +49,7 @@ dependencies {
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.realtime.database)
+    implementation(libs.firebase.storage.ktx)
 
     // --- AndroidX & Navigation ---
     implementation(libs.androidx.core.ktx)

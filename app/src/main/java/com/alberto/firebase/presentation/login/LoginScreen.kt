@@ -84,7 +84,7 @@ fun LoginScreen(auth: FirebaseAuth, navigateToHome: () -> Unit) {
                     Log.i("Alberto", "LOGIN OK")
                 }else{
                     //Error
-                    Log.i("Alberto", "LOGIN KO")
+                    Log.e("FIREBASE_LOGIN", "Error: ${task.exception?.message}")
                 }
             }
         }) {
