@@ -19,7 +19,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
@@ -32,6 +35,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -70,12 +74,15 @@ fun HomeScreen(
     auth: FirebaseAuth,
     navigateToInitial: () -> Unit,
     navigateToChat: () -> Unit,
-    navigateToRadar: () -> Unit
+    navigateToRadar: () -> Unit,
+    navigateToFavorites: () -> Unit // 🌟 AQUÍ ESTÁ EL NUEVO PARÁMETRO DE NAVEGACIÓN
 ) {
     val recommendedArtists by viewmodel.recommendedArtists.collectAsState()
     val recommendedSongs by viewmodel.recommendedSongs.collectAsState()
     val searchResults by viewmodel.searchResults.collectAsState()
     val player by viewmodel.player.collectAsState()
+    val isLoading by viewmodel.isLoading.collectAsState()
+    val favorites by viewmodel.favorites.collectAsState()
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -87,14 +94,12 @@ fun HomeScreen(
     var showImageSourceDialog by remember { mutableStateOf(false) }
     var cameraImageUri by remember { mutableStateOf<Uri?>(null) }
 
-    // 📸 GALERÍA (¡Ahora pasamos context!)
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
         uri?.let { viewmodel.uploadProfilePicture(context, it) }
     }
 
-    // 📸 CÁMARA (¡Ahora pasamos context!)
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()
     ) { success ->
@@ -142,6 +147,7 @@ fun HomeScreen(
     }
 
     LaunchedEffect(auth.currentUser?.uid) {
+        viewmodel.initLocalDatabase(context)
         if (auth.currentUser != null) {
             viewmodel.loadProfilePicture()
         }
@@ -182,9 +188,7 @@ fun HomeScreen(
                         modifier = Modifier
                             .size(120.dp)
                             .clip(CircleShape)
-                            .clickable {
-                                showImageSourceDialog = true
-                            }
+                            .clickable { showImageSourceDialog = true }
                     )
                     Spacer(Modifier.height(8.dp))
                     Text("Toca para cambiar foto", fontSize = 12.sp, color = Color.Gray)
@@ -204,10 +208,24 @@ fun HomeScreen(
                     colors = NavigationDrawerItemDefaults.colors(unselectedContainerColor = Color.Transparent)
                 )
 
+                // 🌟 NUEVO BOTÓN EN EL MENÚ PARA IR A FAVORITOS
+                NavigationDrawerItem(
+                    label = { Text("Mis Favoritos ❤️") },
+                    selected = false,
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        navigateToFavorites()
+                    },
+                    colors = NavigationDrawerItemDefaults.colors(unselectedContainerColor = Color.Transparent)
+                )
+
                 NavigationDrawerItem(
                     label = { Text("Cerrar sesión") }, selected = false,
                     onClick = {
+                        @Suppress("DEPRECATION")
                         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).build()
+
+                        @Suppress("DEPRECATION")
                         GoogleSignIn.getClient(context, gso).signOut().addOnCompleteListener {
                             auth.signOut()
                             navigateToInitial()
@@ -241,7 +259,7 @@ fun HomeScreen(
                     containerColor = Purple40,
                     contentColor = Color.White
                 ) {
-                    Icon(Icons.Default.Chat, "Chat")
+                    Icon(androidx.compose.material.icons.Icons.AutoMirrored.Filled.Chat, "Chat")
                 }
             },
             bottomBar = {
@@ -274,7 +292,7 @@ fun HomeScreen(
                     value = searchText,
                     onValueChange = { searchText = it; viewmodel.searchMusicFromDeezer(it) },
                     modifier = Modifier.fillMaxWidth().padding(16.dp),
-                    placeholder = { Text("¿Qué quieres escuchar?", color = Color.Gray) },
+                    placeholder = { Text(stringResource(id = R.string.search_hint), color = Color.Gray) },
                     leadingIcon = { Icon(Icons.Default.Search, "Buscar", tint = Color.Gray) },
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Purple40,
@@ -286,30 +304,53 @@ fun HomeScreen(
                 )
 
                 LazyColumn(modifier = Modifier.weight(1f), contentPadding = PaddingValues(bottom = 16.dp)) {
-                    if (searchText.isBlank()) {
+                    if (isLoading) {
                         item {
-                            Text("Artistas Populares", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 22.sp, modifier = Modifier.padding(16.dp))
-                        }
-                        item {
-                            LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                                items(recommendedArtists) { artist ->
-                                    ArtistItem(artist = artist, onItemSelected = {
-                                        val artistName = artist.name.orEmpty()
-                                        searchText = artistName
-                                        viewmodel.searchMusicFromDeezer(artistName)
-                                    })
-                                }
+                            Box(
+                                modifier = Modifier.fillMaxWidth().height(200.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(color = Purple40)
                             }
                         }
-                        item {
-                            Text("Top Hits Globales", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 22.sp, modifier = Modifier.padding(start = 16.dp, top = 24.dp, bottom = 8.dp))
-                        }
-                        items(recommendedSongs) { track ->
-                            TrackItem(track = track, onItemSelected = { viewmodel.addPlayer(track) })
-                        }
                     } else {
-                        items(searchResults) { track ->
-                            TrackItem(track = track, onItemSelected = { viewmodel.addPlayer(track) })
+                        if (searchText.isBlank()) {
+                            item {
+                                Text(stringResource(id = R.string.popular_artists), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 22.sp, modifier = Modifier.padding(16.dp))
+                            }
+                            item {
+                                LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                                    items(recommendedArtists) { artist ->
+                                        ArtistItem(artist = artist, onItemSelected = {
+                                            val artistName = artist.name.orEmpty()
+                                            searchText = artistName
+                                            viewmodel.searchMusicFromDeezer(artistName)
+                                        })
+                                    }
+                                }
+                            }
+                            item {
+                                Text(stringResource(id = R.string.top_hits), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 22.sp, modifier = Modifier.padding(start = 16.dp, top = 24.dp, bottom = 8.dp))
+                            }
+                            items(recommendedSongs) { track ->
+                                val isFav = favorites.any { it.title == track.description }
+                                TrackItem(
+                                    track = track,
+                                    isFavorite = isFav,
+                                    onFavoriteToggle = { viewmodel.toggleFavorite(track) },
+                                    onItemSelected = { viewmodel.addPlayer(track) }
+                                )
+                            }
+                        } else {
+                            items(searchResults) { track ->
+                                val isFav = favorites.any { it.title == track.description }
+                                TrackItem(
+                                    track = track,
+                                    isFavorite = isFav,
+                                    onFavoriteToggle = { viewmodel.toggleFavorite(track) },
+                                    onItemSelected = { viewmodel.addPlayer(track) }
+                                )
+                            }
                         }
                     }
                 }
@@ -319,7 +360,12 @@ fun HomeScreen(
 }
 
 @Composable
-fun TrackItem(track: Artist, onItemSelected: () -> Unit) {
+fun TrackItem(
+    track: Artist,
+    isFavorite: Boolean = false,
+    onFavoriteToggle: () -> Unit = {},
+    onItemSelected: () -> Unit
+) {
     Row(
         modifier = Modifier.fillMaxWidth().clickable { onItemSelected() }.padding(horizontal = 16.dp, vertical = 6.dp).background(Color(0xFF1E1E1E), RoundedCornerShape(8.dp)).padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -330,6 +376,15 @@ fun TrackItem(track: Artist, onItemSelected: () -> Unit) {
             Text(text = track.description.orEmpty(), color = Color.White, fontWeight = FontWeight.Bold, maxLines = 1)
             Text(text = track.name.orEmpty(), color = Color.Gray, fontSize = 12.sp, maxLines = 1)
         }
+
+        IconButton(onClick = { onFavoriteToggle() }) {
+            Icon(
+                imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                contentDescription = "Favorito",
+                tint = if (isFavorite) Color.Red else Color.Gray
+            )
+        }
+
         Icon(Icons.Default.PlayArrow, contentDescription = "Reproducir", tint = Purple40)
     }
 }

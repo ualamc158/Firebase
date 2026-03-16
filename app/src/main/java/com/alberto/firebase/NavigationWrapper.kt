@@ -14,6 +14,8 @@ import com.alberto.firebase.presentation.livechat.LiveChatScreen
 import com.alberto.firebase.presentation.livechat.LiveChatViewModel
 import com.alberto.firebase.presentation.login.LoginScreen
 import com.alberto.firebase.presentation.signup.SignupScreen
+// 🌟 IMPORTAMOS LA NUEVA PANTALLA
+import com.alberto.firebase.presentation.favorites.FavoritesScreen
 import com.google.firebase.auth.FirebaseAuth
 
 @Composable
@@ -35,6 +37,7 @@ fun NavigationWrapper(
                     navHostController.navigate("home") {
                         popUpTo("Initial") { inclusive = true }
                     }
+
                 }
             )
         }
@@ -68,7 +71,11 @@ fun NavigationWrapper(
                     navHostController.navigate("livechat")
                 },
                 navigateToRadar = {
-                    navHostController.navigate("radar") // 🌟 AQUÍ LLAMAMOS A LA RUTA DEL MAPA
+                    navHostController.navigate("radar")
+                },
+                // 🌟 AÑADIMOS LA NAVEGACIÓN A FAVORITOS
+                navigateToFavorites = {
+                    navHostController.navigate("favorites")
                 }
             )
         }
@@ -89,9 +96,15 @@ fun NavigationWrapper(
             )
         }
 
-        // 🌟 ESTA ES LA RUTA DEL MAPA QUE PUEDE QUE FALTARA
         composable("radar") {
             com.alberto.firebase.presentation.map.SoundRadarScreen(
+                onBack = { navHostController.popBackStack() }
+            )
+        }
+
+        composable("favorites") {
+            FavoritesScreen(
+                viewModel = homeViewModel, // Usamos el mismo ViewModel para compartir la música y datos
                 onBack = { navHostController.popBackStack() }
             )
         }

@@ -18,6 +18,8 @@ playServicesAuth = "20.7.0"
 playServicesLocation = "21.3.0"
 retrofit = "2.9.0"
 osmdroid = "6.1.18"
+room = "2.6.1"
+facebook = "17.0.0"
 
 [libraries]
 # --- AndroidX & UI Core ---
@@ -49,6 +51,10 @@ firebase-storage-ktx = { group = "com.google.firebase", name = "firebase-storage
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
 converter-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "retrofit" }
 coil = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
+room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
+room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+facebook-login = { group = "com.facebook.android", name = "facebook-login", version.ref = "facebook" }
 
 # --- Mapas & Localización ---
 osmdroid = { module = "org.osmdroid:osmdroid-android", version.ref = "osmdroid" }

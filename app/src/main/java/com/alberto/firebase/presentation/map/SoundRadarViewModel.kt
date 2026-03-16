@@ -1,7 +1,17 @@
 package com.alberto.firebase.presentation.map
 
+import android.Manifest
 import android.annotation.SuppressLint
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
+import android.content.pm.PackageManager
+import android.location.Location
+import android.os.Build
+import android.util.Log
+import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.lifecycle.ViewModel
 import com.alberto.firebase.data.model.UserLocation
 import com.google.android.gms.location.LocationServices
@@ -20,6 +30,9 @@ class SoundRadarViewModel : ViewModel() {
 
     private val _usersNearby = MutableStateFlow<List<UserLocation>>(emptyList())
     val usersNearby: StateFlow<List<UserLocation>> = _usersNearby
+
+    // 🌟 Lista para no repetir la misma notificación 100 veces
+    private val notifiedUsers = mutableSetOf<String>()
 
     init {
         listenToNearbyUsers()
@@ -49,7 +62,6 @@ class SoundRadarViewModel : ViewModel() {
                 }
         } catch (e: SecurityException) {
             // Si el usuario denegó los permisos, salta aquí.
-            // Puede seguir escuchando música, pero no aparecerá en el mapa.
         }
     }
 
@@ -66,5 +78,66 @@ class SoundRadarViewModel : ViewModel() {
     fun removeCurrentLocation() {
         val userId = auth.currentUser?.uid ?: return
         database.child(userId).removeValue()
+    }
+
+    // 🌟 NUEVO: COMPROBAR DISTANCIAS Y LANZAR NOTIFICACIÓN
+    @SuppressLint("MissingPermission")
+    fun checkProximity(context: Context) {
+        try {
+            val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
+            fusedLocationClient.lastLocation.addOnSuccessListener { myLoc: Location? ->
+                if (myLoc != null) {
+                    val currentEmail = auth.currentUser?.email
+                    val others = _usersNearby.value
+
+                    for (user in others) {
+                        if (user.email == currentEmail) continue // No nos medimos a nosotros mismos
+
+                        // Calculamos la distancia en metros
+                        val results = FloatArray(1)
+                        Location.distanceBetween(myLoc.latitude, myLoc.longitude, user.latitude, user.longitude, results)
+                        val distanceInMeters = results[0]
+
+                        if (distanceInMeters < 50) { // 🌟 SI ESTÁ A MENOS DE 50 METROS
+                            val userEmailKey = user.email ?: continue
+                            if (!notifiedUsers.contains(userEmailKey)) {
+                                sendNotification(context, user)
+                                notifiedUsers.add(userEmailKey) // Lo marcamos para no spamear
+                            }
+                        } else {
+                            // Si se aleja, lo borramos de la lista para volver a avisar si se acerca
+                            user.email?.let { notifiedUsers.remove(it) }
+                        }
+                    }
+                }
+            }
+        } catch (e: SecurityException) {
+            Log.e("RADAR", "Sin permisos para comprobar proximidad")
+        }
+    }
+
+    // 🌟 NUEVO: CONSTRUCCIÓN DE LA NOTIFICACIÓN ANDROID
+    private fun sendNotification(context: Context, user: UserLocation) {
+        val channelId = "music_tags_channel"
+
+        // En Android 8+ hay que crear un "Canal" de notificaciones
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(channelId, "Music Tags Alerts", NotificationManager.IMPORTANCE_HIGH)
+            val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            manager.createNotificationChannel(channel)
+        }
+
+        val builder = NotificationCompat.Builder(context, channelId)
+            .setSmallIcon(android.R.drawable.ic_dialog_map) // Icono por defecto de Android
+            .setContentTitle("¡Alguien cerca de ti!")
+            .setContentText("Está sonando: ${user.songTitle} de ${user.artistName}")
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+
+        // Verificamos el permiso en tiempo real antes de lanzar la notificación
+        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+            val notificationId = user.email?.hashCode() ?: System.currentTimeMillis().toInt()
+            NotificationManagerCompat.from(context).notify(notificationId, builder.build())
+        }
     }
 }

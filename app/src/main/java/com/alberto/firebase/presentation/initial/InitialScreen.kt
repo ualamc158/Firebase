@@ -2,6 +2,7 @@ package com.alberto.firebase.presentation.initial
 
 import android.app.Activity
 import android.util.Log
+import androidx.activity.compose.LocalActivityResultRegistryOwner
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -21,6 +22,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,30 +42,63 @@ import com.alberto.firebase.ui.theme.BackgroundButton
 import com.alberto.firebase.ui.theme.Black
 import com.alberto.firebase.ui.theme.Gray
 import com.alberto.firebase.ui.theme.ShapeButton
+import com.facebook.CallbackManager
+import com.facebook.FacebookCallback
+import com.facebook.FacebookException
+import com.facebook.login.LoginManager
+import com.facebook.login.LoginResult
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
+import com.google.firebase.auth.FacebookAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 
-// Nota: He quitado el @Preview porque al pedir `auth: FirebaseAuth` el preview de Compose falla.
 @Composable
 fun InitialScreen(
-    auth: FirebaseAuth, // Necesitamos pasar auth
+    auth: FirebaseAuth,
     navigateToLogin: () -> Unit = {},
     navigateToSignUp: () -> Unit = {},
-    navigateToHome: () -> Unit = {} // Necesitamos saber a dónde ir al tener éxito
+    navigateToHome: () -> Unit = {}
 ) {
     val context = LocalContext.current
 
-    // 1. Configurar el "Launcher" que escucha la respuesta de Google
+    // 🌟 1. PREPARAMOS EL GESTOR DE RESULTADOS DE FACEBOOK
+    val callbackManager = remember { CallbackManager.Factory.create() }
+    val registryOwner = LocalActivityResultRegistryOwner.current
+
+    // 🌟 2. ESCUCHAMOS LA RESPUESTA DE FACEBOOK EN SEGUNDO PLANO
+    DisposableEffect(Unit) {
+        LoginManager.getInstance().registerCallback(callbackManager, object : FacebookCallback<LoginResult> {
+            override fun onSuccess(result: LoginResult) {
+                // Si el login de Facebook va bien, le pasamos el "ticket" a Firebase
+                val credential = FacebookAuthProvider.getCredential(result.accessToken.token)
+                auth.signInWithCredential(credential).addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        Log.i("Alberto", "LOGIN FACEBOOK OK")
+                        navigateToHome()
+                    } else {
+                        Log.i("Alberto", "LOGIN FACEBOOK KO: ${task.exception?.message}")
+                    }
+                }
+            }
+            override fun onCancel() {
+                Log.i("Alberto", "LOGIN FACEBOOK CANCELADO")
+            }
+            override fun onError(error: FacebookException) {
+                Log.i("Alberto", "LOGIN FACEBOOK ERROR: ${error.message}")
+            }
+        })
+        onDispose { }
+    }
+
+    // GESTOR DE GOOGLE
     val launcher = rememberLauncherForActivityResult(contract = ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
             try {
                 val account = task.getResult(ApiException::class.java)
                 val credential = GoogleAuthProvider.getCredential(account.idToken, null)
-                // 2. Autenticar en Firebase con las credenciales
                 auth.signInWithCredential(credential).addOnCompleteListener { authTask ->
                     if (authTask.isSuccessful) {
                         Log.i("Alberto", "LOGIN GOOGLE OK")
@@ -103,19 +139,20 @@ fun InitialScreen(
         }
         Spacer(modifier = Modifier.height(8.dp))
 
-        // BOTÓN DE GOOGLE ACTUALIZADO
+        // BOTÓN DE GOOGLE
         CustomButton(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp)
                 .padding(horizontal = 32.dp)
-                .clip(CircleShape) // Añadido clip para que la pulsación sea redondeada
+                .clip(CircleShape)
                 .clickable {
-                    // 3. Lanzar la ventana de Google al hacer clic
+                    @Suppress("DEPRECATION")
                     val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                         .requestIdToken(context.getString(R.string.default_web_client_id))
                         .requestEmail()
                         .build()
+                    @Suppress("DEPRECATION")
                     val googleSignInClient = GoogleSignIn.getClient(context, gso)
                     launcher.launch(googleSignInClient.signInIntent)
                 }
@@ -127,13 +164,28 @@ fun InitialScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        CustomButton(Modifier
-            .fillMaxWidth()
-            .height(48.dp)
-            .padding(horizontal = 32.dp)
-            .background(BackgroundButton)
-            .border(2.dp, ShapeButton, CircleShape)
-            , painterResource(R.drawable.facebook), "Continue with Facebook")
+        // 🌟 BOTÓN DE FACEBOOK ACTUALIZADO
+        CustomButton(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp)
+                .padding(horizontal = 32.dp)
+                .clip(CircleShape) // Hacemos que el clic sea redondo
+                .clickable {
+                    // 🌟 LANZAMOS EL LOGIN DE FACEBOOK
+                    registryOwner?.let {
+                        LoginManager.getInstance().logIn(
+                            it,
+                            callbackManager,
+                            listOf("public_profile")
+                        )
+                    }
+                }
+                .background(BackgroundButton)
+                .border(2.dp, ShapeButton, CircleShape),
+            painter = painterResource(R.drawable.facebook),
+            title = "Continue with Facebook"
+        )
 
         Text(text="Log In", color = Color.White, modifier = Modifier
             .padding(24.dp)

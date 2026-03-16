@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.googleServices)
     alias(libs.plugins.crashlytics)
+    id("kotlin-kapt")
 }
 
 android {
@@ -70,6 +71,7 @@ dependencies {
     implementation(libs.retrofit)
     implementation(libs.converter.gson)
     implementation(libs.coil)
+    implementation(libs.facebook.login)
 
     // --- Maps & Location ---
     implementation(libs.osmdroid)
@@ -86,4 +88,8 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+
+    implementation(libs.room.runtime)
+    implementation(libs.room.ktx)
+    kapt(libs.room.compiler)
 }
